@@ -15,6 +15,12 @@ public final class NeiHooks {
 	}
 
 	private static boolean active(Screen screen) {
+		// The custom item panel is retired: EMI's own index is the one true item list, and a
+		// second list drawn next to it was confusing and fragile. Everything below stays dormant
+		// so the panel can be revived deliberately; nothing renders or takes input meanwhile.
+		if (true) {
+			return false;
+		}
 		if (screen instanceof dev.nei.panel.SubsetEditScreen) {
 			return false;
 		}

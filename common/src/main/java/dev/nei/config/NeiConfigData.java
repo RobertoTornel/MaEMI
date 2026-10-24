@@ -27,7 +27,8 @@ public final class NeiConfigData {
 	}
 
 	public static final class Panel {
-		public boolean enabled = true;
+		/** Retired: the custom panel renders nowhere; EMI's own index is used instead. */
+		public boolean enabled = false;
 		public Side side = Side.LEFT;
 		public int columns = 9;
 		public int rows = 8;
