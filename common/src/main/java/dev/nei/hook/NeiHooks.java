@@ -18,6 +18,11 @@ public final class NeiHooks {
 		if (screen instanceof dev.nei.panel.SubsetEditScreen) {
 			return false;
 		}
+		// The creative inventory already has EMI's item index and its own tabs/search; drawing a
+		// second item list over it only fights the creative screen. Leave creative to EMI.
+		if (screen instanceof net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen) {
+			return false;
+		}
 		return NeiConfig.get().general.enabled && NeiConfig.get().panel.enabled
 			&& (NeiConfig.get().general.showEverywhere || screen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>);
 	}

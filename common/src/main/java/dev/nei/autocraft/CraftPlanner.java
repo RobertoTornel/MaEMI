@@ -53,7 +53,7 @@ public final class CraftPlanner {
 		if (needed <= 0) {
 			return true;
 		}
-		String key = StackIO.key(stack);
+		String key = stockKey(stack);
 		long have = state.stock.getOrDefault(key, 0L);
 		if (have >= needed) {
 			state.stock.put(key, have - needed);
@@ -105,7 +105,7 @@ public final class CraftPlanner {
 		if (perCraft <= 0) {
 			return false;
 		}
-		String key = StackIO.key(stack);
+		String key = stockKey(stack);
 		long have = state.stock.getOrDefault(key, 0L);
 		long shortfall = needed - have;
 		if (shortfall <= 0) {
@@ -218,7 +218,7 @@ public final class CraftPlanner {
 		if (perCraft <= 0) {
 			return new RecipeOption(recipe, Integer.MAX_VALUE, Integer.MAX_VALUE);
 		}
-		long have = state.stock.getOrDefault(StackIO.key(stack), 0L);
+		long have = state.stock.getOrDefault(stockKey(stack), 0L);
 		long shortfall = Math.max(0, needed - have);
 		long batches = shortfall == 0 ? 1 : shortfall / perCraft + (shortfall % perCraft == 0 ? 0 : 1);
 		int missing = 0;
@@ -241,7 +241,7 @@ public final class CraftPlanner {
 	private static boolean available(EmiIngredient input, long required, State state) {
 		for (EmiStack candidate : input.getEmiStacks()) {
 			if (candidate != null && !candidate.isEmpty()
-					&& state.stock.getOrDefault(StackIO.key(candidate), 0L) >= required) {
+					&& state.stock.getOrDefault(stockKey(candidate), 0L) >= required) {
 				return true;
 			}
 		}
@@ -253,7 +253,7 @@ public final class CraftPlanner {
 			if (candidate == null || candidate.isEmpty()) {
 				continue;
 			}
-			String key = StackIO.key(candidate);
+			String key = stockKey(candidate);
 			if (state.stock.getOrDefault(key, 0L) >= required) {
 				return true;
 			}
@@ -268,7 +268,7 @@ public final class CraftPlanner {
 		List<EmiStack> options = new ArrayList<>();
 		Set<String> seen = new HashSet<>();
 		for (EmiStack candidate : input.getEmiStacks()) {
-			if (candidate == null || candidate.isEmpty() || !seen.add(StackIO.key(candidate))) {
+			if (candidate == null || candidate.isEmpty() || !seen.add(stockKey(candidate))) {
 				continue;
 			}
 			options.add(candidate);
@@ -279,18 +279,18 @@ public final class CraftPlanner {
 			if (tierA != tierB) {
 				return Integer.compare(tierB, tierA);
 			}
-			long haveA = state.stock.getOrDefault(StackIO.key(a), 0L);
-			long haveB = state.stock.getOrDefault(StackIO.key(b), 0L);
+			long haveA = state.stock.getOrDefault(stockKey(a), 0L);
+			long haveB = state.stock.getOrDefault(stockKey(b), 0L);
 			if (haveA != haveB) {
 				return Long.compare(haveB, haveA);
 			}
-			return StackIO.key(a).compareTo(StackIO.key(b));
+			return stockKey(a).compareTo(stockKey(b));
 		});
 		return options;
 	}
 
 	private static int optionTier(EmiStack stack, long needed, State state, Set<String> path) {
-		String key = StackIO.key(stack);
+		String key = stockKey(stack);
 		long have = state.stock.getOrDefault(key, 0L);
 		if (have >= needed) {
 			return 3;
@@ -302,7 +302,7 @@ public final class CraftPlanner {
 	}
 
 	private static boolean hasRecipe(EmiStack stack, State state) {
-		String key = StackIO.key(stack);
+		String key = stockKey(stack);
 		Boolean cached = state.craftable.get(key);
 		if (cached != null) {
 			return cached;
@@ -338,15 +338,27 @@ public final class CraftPlanner {
 	}
 
 	private static long producedAmount(EmiRecipe recipe, EmiStack stack) {
-		String key = StackIO.key(stack);
 		long amount = 0;
 		for (EmiStack output : recipe.getOutputs()) {
-			if (output == null || output.isEmpty() || !key.equals(StackIO.key(output))) {
+			if (output == null || output.isEmpty() || !output.isEqual(stack)) {
 				continue;
 			}
 			amount = add(amount, Math.max(1, output.getAmount()));
 		}
 		return amount;
+	}
+
+	/**
+	 * Stock identity uses EMI's own comparison key, not the strict NBT key: recipes and the item
+	 * panel hand us different NBT variants of the same item (tools, damage, GT behaviours), and
+	 * EMI itself treats them as the same ingredient. Hide/subset files keep using StackIO.key.
+	 */
+	private static String stockKey(EmiStack stack) {
+		if (stack == null || stack.isEmpty()) {
+			return "";
+		}
+		Object key = stack.getKey();
+		return key == null ? StackIO.key(stack) : key.toString();
 	}
 
 	private static Map<String, Long> countInventory() {
@@ -372,7 +384,7 @@ public final class CraftPlanner {
 		if (stack == null || stack.isEmpty()) {
 			return;
 		}
-		String key = StackIO.key(EmiStack.of(stack));
+		String key = stockKey(EmiStack.of(stack));
 		if (!key.isEmpty()) {
 			counts.merge(key, (long) stack.getCount(), Long::sum);
 		}
