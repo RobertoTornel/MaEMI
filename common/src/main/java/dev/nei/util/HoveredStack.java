@@ -15,6 +15,14 @@ public final class HoveredStack {
 			return EmiStack.EMPTY;
 		}
 		try {
+			EmiStack panelStack = dev.nei.panel.NeiPanel.get().state().hoveredStack();
+			if (panelStack != null && !panelStack.isEmpty()) {
+				return panelStack;
+			}
+		} catch (Throwable ignored) {
+			// panel not initialised
+		}
+		try {
 			var interaction = EmiApi.getHoveredStack(true);
 			if (interaction != null && interaction.getStack() instanceof EmiStack stack && !stack.isEmpty()) {
 				return stack;

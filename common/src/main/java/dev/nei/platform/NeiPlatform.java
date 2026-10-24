@@ -36,6 +36,11 @@ public interface NeiPlatform {
 		return List.of();
 	}
 
+	/** True when the given key event matches the binding registered for {@code translationKey}. */
+	default boolean matchesKeybind(String translationKey, int keyCode, int scanCode, int modifiers) {
+		return false;
+	}
+
 	/** Human-readable mod name for a registry namespace, or the namespace itself when unknown. */
 	default String modNameFor(String namespace) {
 		return namespace;

@@ -17,6 +17,7 @@ import net.minecraft.client.util.InputUtil;
 import org.jetbrains.annotations.Nullable;
 
 public final class FabricPlatform implements NeiPlatform {
+	private final java.util.Map<String, KeyBinding> bindings = new java.util.HashMap<>();
 	@Override
 	public String loaderName() {
 		return "Fabric";
@@ -69,9 +70,16 @@ public final class FabricPlatform implements NeiPlatform {
 	}
 
 	@Override
+	public boolean matchesKeybind(String translationKey, int keyCode, int scanCode, int modifiers) {
+		KeyBinding binding = bindings.get(translationKey);
+		return binding != null && binding.matchesKey(keyCode, scanCode);
+	}
+
+	@Override
 	public NeiKeybind registerKeybind(String translationKey, int defaultKey) {
 		KeyBinding binding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 			translationKey, InputUtil.Type.KEYSYM, defaultKey, "category.nei"));
+		bindings.put(translationKey, binding);
 		return new NeiKeybind() {
 			@Override
 			public boolean wasPressed() {

@@ -126,5 +126,9 @@
 	"nei.dump.failed": "Dump failed: %s",
 	"nei.status.cheat_on": "NEI: cheat mode enabled.",
 	"nei.status.cheat_off": "NEI: cheat mode disabled.",
-	"nei.config.tooltip.nbt": "Show NBT data"
+	"nei.config.tooltip.nbt": "Show NBT data",
+	"nei.utility.title": "NEI Utilities",
+	"key.nei.dump": "Dump NEI data",
+	"category.nei": "Not Enough Items",
+	"nei.panel.subset_created": "NEI: created subset %s (right-click a tab again to add more)."
 }

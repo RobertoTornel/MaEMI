@@ -84,6 +84,16 @@ public final class ForgePlatform implements NeiPlatform {
 	}
 
 	@Override
+	public boolean matchesKeybind(String translationKey, int keyCode, int scanCode, int modifiers) {
+		for (PendingBind bind : pending) {
+			if (bind.translationKey.equals(translationKey) && bind.mapping != null && bind.mapping.matchesKey(keyCode, scanCode)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
 	public NeiKeybind registerKeybind(String translationKey, int defaultKey) {
 		PendingBind bind = new PendingBind(translationKey, defaultKey);
 		pending.add(bind);

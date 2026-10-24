@@ -47,7 +47,21 @@ public final class NeiPanelRenderer {
 		if (layout.helpInside(mouseX, mouseY)) {
 			context.drawTooltip(textRenderer, List.of(Text.translatable("nei.panel.help")), mouseX, mouseY);
 		}
+		drawStatus(context, textRenderer, layout, state);
 		drawHoveredTooltip(context, textRenderer, layout, stacks, mouseX, mouseY);
+	}
+
+	private static void drawStatus(DrawContext context, TextRenderer textRenderer, NeiPanelLayout layout,
+			NeiPanelState state) {
+		String status = state.status();
+		if (status == null || status.isEmpty()) {
+			return;
+		}
+		int width = textRenderer.getWidth(status);
+		int x = (layout.screenWidth - width) / 2;
+		int y = layout.screenHeight - 28;
+		context.fill(x - 3, y - 2, x + width + 3, y + 10, 0xC0101010);
+		context.drawTextWithShadow(textRenderer, status, x, y, 0xFFFFFF);
 	}
 
 	private static void drawHoveredTooltip(DrawContext context, TextRenderer textRenderer, NeiPanelLayout layout,
@@ -57,10 +71,12 @@ public final class NeiPanelRenderer {
 		}
 		int hovered = layout.slotAt(mouseX, mouseY);
 		if (hovered < 0) {
+			NeiPanel.get().state().setHoveredStack(EmiStack.EMPTY);
 			return;
 		}
 		int index = layout.firstItemIndex(NeiPanel.get().state()) + hovered;
 		if (index < 0 || index >= stacks.size()) {
+			NeiPanel.get().state().setHoveredStack(EmiStack.EMPTY);
 			return;
 		}
 		NeiPanel.get().state().setHoveredStack(stacks.get(index));

@@ -40,7 +40,10 @@ public final class NeiPanelInput {
 		}
 
 		if (layout.helpInside(mouseX, mouseY)) {
-			if (!WorkstationLookup.openForHeldItem() && !WorkstationLookup.openForLookedAtBlock()) {
+			if (button == 1) {
+				MinecraftClient client = MinecraftClient.getInstance();
+				client.setScreen(new dev.nei.cheat.UtilityScreen(screen));
+			} else if (!WorkstationLookup.openForHeldItem() && !WorkstationLookup.openForLookedAtBlock()) {
 				status("nei.panel.help");
 			}
 			return true;
@@ -49,7 +52,14 @@ public final class NeiPanelInput {
 		NeiPanelLayout.Tab tab = layout.tabAt(mouseX, mouseY);
 		if (tab != null) {
 			state.setSearchFocused(false);
-			state.setSelectedSubset(tab.subset);
+			if (button == 1) {
+				// Right-clicking a tab creates a new subset, like NEI's "..." button.
+				ItemSubset created = ItemSubsetList.get().create("Subset");
+				state.setSelectedSubset(created.name());
+				status("nei.panel.subset_created", created.name());
+			} else {
+				state.setSelectedSubset(tab.subset);
+			}
 			state.resetPage();
 			ItemPanelSource.get().invalidate();
 			return true;
@@ -229,9 +239,6 @@ public final class NeiPanelInput {
 	}
 
 	private static void status(String key, Object... args) {
-		MinecraftClient client = MinecraftClient.getInstance();
-		if (client != null && client.player != null) {
-			client.player.sendMessage(Text.translatable(key, args), true);
-		}
+		dev.nei.util.Messages.status(key, args);
 	}
 }

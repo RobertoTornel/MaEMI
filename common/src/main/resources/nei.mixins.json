@@ -6,7 +6,8 @@
 	"client": [
 		"HandledScreenAccessor",
 		"HandledScreenMixin",
-		"ItemStackTooltipMixin"
+		"ItemStackTooltipMixin",
+		"ParentElementMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

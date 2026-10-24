@@ -9,6 +9,8 @@ import net.minecraft.client.gui.screen.Screen;
  * Single entry point used by the mixins so the injection code stays trivial and can be audited.
  */
 public final class NeiHooks {
+	private static boolean bridgeChecked;
+
 	private NeiHooks() {
 	}
 
@@ -19,6 +21,10 @@ public final class NeiHooks {
 
 	public static void render(DrawContext context, Screen screen, int mouseX, int mouseY, float delta) {
 		if (active(screen)) {
+			if (!bridgeChecked) {
+				bridgeChecked = true;
+				dev.nei.integration.EmiPanelBridge.sync();
+			}
 			NeiPanel.get().onScreenChanged(screen);
 			NeiPanel.get().render(context, screen, mouseX, mouseY, delta);
 		}
@@ -33,7 +39,13 @@ public final class NeiHooks {
 	}
 
 	public static boolean keyPressed(Screen screen, int keyCode, int scanCode, int modifiers) {
-		return active(screen) && NeiPanel.get().keyPressed(screen, keyCode, scanCode, modifiers);
+		if (!active(screen)) {
+			return false;
+		}
+		if (NeiPanel.get().keyPressed(screen, keyCode, scanCode, modifiers)) {
+			return true;
+		}
+		return dev.nei.NeiKeybinds.handleKeyPressed(keyCode, scanCode, modifiers);
 	}
 
 	public static boolean charTyped(Screen screen, char chr, int modifiers) {

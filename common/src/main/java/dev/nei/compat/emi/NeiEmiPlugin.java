@@ -29,6 +29,10 @@ public class NeiEmiPlugin implements EmiPlugin {
 			Nei.LOG.error("[NEI] compatibility setup failed", t);
 		}
 		try {
+			dev.nei.panel.NeiPanel.get().refresh();
+		} catch (Throwable ignored) {
+		}
+		try {
 			EmiPanelBridge.sync();
 		} catch (Throwable t) {
 			Nei.LOG.warn("[NEI] could not synchronise EMI sidebars", t);

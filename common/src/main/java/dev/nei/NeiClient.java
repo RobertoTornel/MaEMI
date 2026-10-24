@@ -3,7 +3,6 @@ package dev.nei;
 import java.nio.file.Path;
 
 import dev.nei.config.NeiConfig;
-import dev.nei.integration.EmiPanelBridge;
 import dev.nei.platform.NeiPlatform;
 
 /** Client-side singleton state, kept separate from {@link Nei} so a dedicated server never loads GUI classes. */
@@ -22,7 +21,6 @@ public final class NeiClient {
 		platform = plt;
 		NeiConfig.load(plt.configDirectory());
 		Nei.LOG.info("[NEI] loaded config from {}", NeiConfig.file());
-		EmiPanelBridge.sync();
 	}
 
 	public static NeiPlatform platform() {

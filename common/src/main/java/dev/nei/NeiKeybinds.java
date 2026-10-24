@@ -6,6 +6,7 @@ import java.util.Map;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.nei.autocraft.AutoCraftService;
 import dev.nei.config.ConfigScreens;
+import dev.nei.dump.DumpService;
 import dev.nei.item.HideList;
 import dev.nei.panel.NeiPanel;
 import dev.nei.panel.NeiPanelState;
@@ -27,7 +28,8 @@ public final class NeiKeybinds {
 		AUTOCRAFT("key.nei.autocraft", GLFW.GLFW_KEY_C),
 		OPEN_CONFIG("key.nei.open_config", GLFW.GLFW_KEY_P),
 		HIDE_ITEM("key.nei.hide_item", GLFW.GLFW_KEY_H),
-		TOGGLE_CHEAT("key.nei.toggle_cheat", GLFW.GLFW_KEY_UNKNOWN);
+		TOGGLE_CHEAT("key.nei.toggle_cheat", GLFW.GLFW_KEY_UNKNOWN),
+		DUMP("key.nei.dump", GLFW.GLFW_KEY_F8);
 
 		public final String translationKey;
 		public final int defaultKey;
@@ -56,13 +58,37 @@ public final class NeiKeybinds {
 		if (!NeiConfig.get().general.enabled) {
 			return;
 		}
+		MinecraftClient client = MinecraftClient.getInstance();
 		for (Map.Entry<Action, NeiKeybind> entry : BINDS.entrySet()) {
-			if (!entry.getValue().wasPressed()) {
+			boolean pressed = entry.getValue().wasPressed();
+			if (!pressed) {
 				continue;
 			}
-			handle(entry.getKey());
+			// While a screen is open, NeiHooks.keyPressed already handled the key; drop the queued
+			// press so it does not fire again when the screen closes.
+			if (client.currentScreen == null) {
+				handle(entry.getKey());
+			}
 		}
 		AutoCraftService.tick();
+	}
+
+	/** Called from the screen hook, where vanilla key bindings do not fire. */
+	public static boolean handleKeyPressed(int keyCode, int scanCode, int modifiers) {
+		if (!NeiConfig.get().general.enabled) {
+			return false;
+		}
+		for (Action action : Action.values()) {
+			NeiKeybind bind = BINDS.get(action);
+			if (bind == null) {
+				continue;
+			}
+			if (NeiClient.platform().matchesKeybind(action.translationKey, keyCode, scanCode, modifiers)) {
+				handle(action);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public static void handle(Action action) {
@@ -71,6 +97,7 @@ public final class NeiKeybinds {
 				NeiConfigDataToggle.togglePanel();
 			}
 			case OPEN_CONFIG -> ConfigScreens.open();
+			case DUMP -> DumpService.dumpAll();
 			case AUTOCRAFT -> AutoCraftService.requestCraftHovered();
 			case HIDE_ITEM -> {
 				EmiStack stack = HoveredStack.get();
@@ -95,10 +122,7 @@ public final class NeiKeybinds {
 	}
 
 	private static void status(String key) {
-		MinecraftClient client = MinecraftClient.getInstance();
-		if (client.player != null) {
-			client.player.sendMessage(net.minecraft.text.Text.translatable(key), true);
-		}
+		dev.nei.util.Messages.status(key);
 	}
 
 	/** Small indirection so the key handling never touches the config object twice. */

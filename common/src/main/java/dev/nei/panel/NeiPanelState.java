@@ -19,6 +19,8 @@ public final class NeiPanelState {
 	private boolean enabled = true;
 	private long lastSearchClick;
 	private EmiStack hoveredStack = EmiStack.EMPTY;
+	private String statusText = "";
+	private long statusUntil;
 
 	public EmiStack hoveredStack() {
 		return hoveredStack;
@@ -26,6 +28,16 @@ public final class NeiPanelState {
 
 	public void setHoveredStack(EmiStack stack) {
 		this.hoveredStack = stack == null ? EmiStack.EMPTY : stack;
+	}
+
+	/** Short-lived feedback drawn at the bottom of the screen, in addition to chat. */
+	public void setStatus(String text) {
+		this.statusText = text == null ? "" : text;
+		this.statusUntil = System.currentTimeMillis() + 4000L;
+	}
+
+	public String status() {
+		return System.currentTimeMillis() < statusUntil ? statusText : "";
 	}
 
 	public int scrollRow() {

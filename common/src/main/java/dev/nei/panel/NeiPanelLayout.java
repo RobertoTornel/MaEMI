@@ -105,12 +105,23 @@ public final class NeiPanelLayout {
 		this.screenWidth = screen == null ? 320 : Math.max(1, screen.width);
 		this.screenHeight = screen == null ? 240 : Math.max(1, screen.height);
 
-		int maxColumns = Math.max(1, (screenWidth - MARGIN * 2 - PADDING * 2) / SLOT);
-		this.columns = Math.max(1, Math.min(Math.min(12, panel.columns), maxColumns));
 		this.showSearch = panel.showSearchBar;
 		this.showTabs = panel.showTabs;
 		this.showCounts = panel.showItemCount;
 		this.side = state == null ? panel.side : state.effectiveSide(panel.side);
+
+		// Prefer to sit next to the GUI without covering it: if the configured width does not fit
+		// on that side, use fewer columns rather than overlapping the container background.
+		Bounds bounds = bounds(screen);
+		int available = screenWidth - MARGIN * 2;
+		if (bounds != null) {
+			available = side == NeiConfigData.Side.LEFT
+				? bounds.x - GAP - MARGIN
+				: screenWidth - (bounds.x + bounds.width) - GAP - MARGIN;
+		}
+		int spaceColumns = Math.max(1, (available - PADDING * 2) / SLOT);
+		int maxColumns = Math.max(1, (screenWidth - MARGIN * 2 - PADDING * 2) / SLOT);
+		this.columns = Math.max(1, Math.min(Math.min(12, Math.min(panel.columns, spaceColumns)), maxColumns));
 
 		int configuredRows = Math.max(1, Math.min(20, panel.rows));
 		int footer = showTabs ? FOOTER : 0;
@@ -120,7 +131,6 @@ public final class NeiPanelLayout {
 		this.panelWidth = columns * SLOT + PADDING * 2;
 		this.panelHeight = HEADER + rows * SLOT + footer;
 
-		Bounds bounds = bounds(screen);
 		int proposedX;
 		if (side == NeiConfigData.Side.LEFT) {
 			proposedX = bounds != null ? bounds.x - GAP - panelWidth : MARGIN;
