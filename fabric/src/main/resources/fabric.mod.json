@@ -1,0 +1,24 @@
+{
+	"schemaVersion": 1,
+	"id": "nei",
+	"version": "${version}",
+	"name": "Not Enough Items (Fabric)",
+	"description": "NEI's feature set - item panel, subsets, bookmarks, utility buttons, '?' lookups and autocrafting - bolted onto EMI.",
+	"authors": ["NEI-Fabric contributors"],
+	"license": "LGPL-3.0-or-later",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["dev.nei.fabric.NeiFabric"],
+		"emi": ["dev.nei.compat.emi.NeiEmiPlugin"]
+	},
+	"mixins": ["nei.mixins.json"],
+	"depends": {
+		"fabricloader": ">=0.15.0",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"emi": ">=1.1.20"
+	},
+	"recommends": {
+		"cloth-config": ">=11.0.0"
+	}
+}

@@ -1,0 +1,54 @@
+plugins {
+	id 'com.gradleup.shadow'
+}
+
+loom {
+	forge {
+		mixinConfig "nei.mixins.json"
+	}
+}
+
+architectury {
+	platformSetupLoomIde()
+	forge()
+}
+
+configurations {
+	common {
+		canBeResolved = true
+		canBeConsumed = false
+	}
+	compileClasspath.extendsFrom common
+	runtimeClasspath.extendsFrom common
+	developmentForge.extendsFrom common
+
+	shadowBundle {
+		canBeResolved = true
+		canBeConsumed = false
+	}
+}
+
+dependencies {
+	forge "net.minecraftforge:forge:$rootProject.forge_version"
+
+	common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
+	shadowBundle project(path: ':common', configuration: 'transformProductionForge')
+
+	modImplementation "dev.emi:emi-forge:$rootProject.emi_version"
+	modImplementation "me.shedaniel.cloth:cloth-config-forge:$rootProject.cloth_config_version"
+}
+
+processResources {
+	filesMatching('META-INF/mods.toml') {
+		expand version: inputs.properties.version
+	}
+}
+
+shadowJar {
+	configurations = [project.configurations.shadowBundle]
+	archiveClassifier = 'dev-shadow'
+}
+
+remapJar {
+	inputFile.set shadowJar.archiveFile
+}
