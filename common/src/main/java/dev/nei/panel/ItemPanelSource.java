@@ -57,7 +57,13 @@ public final class ItemPanelSource {
 		if (current.equals(signature) && cached != null) {
 			return cached;
 		}
-		List<EmiStack> built = build(config);
+		List<EmiStack> built;
+		try {
+			built = build(config);
+		} catch (Throwable t) {
+			// Never let a race in the item index take the render thread down with it.
+			return cached;
+		}
 		// EMI rebuilds its index during startup and resource reloads; an empty index is not an
 		// empty panel. Keep the last good list instead of flashing "No items to show".
 		if (built.isEmpty() && !cached.isEmpty() && sourceIsIndex()
@@ -187,13 +193,28 @@ public final class ItemPanelSource {
 			}
 			if (subset != null) {
 				ItemSubset itemSubset = ItemSubsetList.get().byName(subset);
-				return itemSubset == null || itemSubset.stacks() == null ? List.of() : itemSubset.stacks();
+				return itemSubset == null || itemSubset.stacks() == null
+						? List.of() : new ArrayList<>(itemSubset.stacks());
 			}
-			List<EmiStack> stacks = EmiApi.getIndexStacks();
-			return stacks == null ? List.of() : stacks;
+			return snapshotEmiIndex();
 		} catch (Throwable ignored) {
 			return List.of();
 		}
+	}
+
+	/** Copies EMI's index, retrying if the reload thread is mutating it right now. */
+	public static List<EmiStack> snapshotEmiIndex() {
+		for (int attempt = 0; attempt < 3; attempt++) {
+			try {
+				List<EmiStack> stacks = EmiApi.getIndexStacks();
+				return stacks == null ? List.of() : new ArrayList<>(stacks);
+			} catch (java.util.ConcurrentModificationException racing) {
+				// EMI is rebuilding; the next attempt usually sees a stable list.
+			} catch (Throwable ignored) {
+				break;
+			}
+		}
+		return List.of();
 	}
 
 	private static dev.nei.search.SearchMode searchMode(NeiConfigData config) {
