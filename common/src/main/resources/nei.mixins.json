@@ -4,7 +4,9 @@
 	"package": "dev.nei.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"client": [
-		"HandledScreenMixin"
+		"HandledScreenAccessor",
+		"HandledScreenMixin",
+		"ItemStackTooltipMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

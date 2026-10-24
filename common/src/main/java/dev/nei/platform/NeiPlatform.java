@@ -1,6 +1,9 @@
 package dev.nei.platform;
 
 import java.nio.file.Path;
+import java.util.List;
+
+import dev.nei.api.NeiPlugin;
 
 import net.minecraft.client.gui.screen.Screen;
 import org.jetbrains.annotations.Nullable;
@@ -27,4 +30,14 @@ public interface NeiPlatform {
 
 	/** Registers a client-side key binding and returns a handle whose {@code wasPressed} is polled each tick. */
 	NeiKeybind registerKeybind(String translationKey, int defaultKey);
+
+	/** Addon plugins discovered by the loader. */
+	default List<NeiPlugin> plugins() {
+		return List.of();
+	}
+
+	/** Human-readable mod name for a registry namespace, or the namespace itself when unknown. */
+	default String modNameFor(String namespace) {
+		return namespace;
+	}
 }

@@ -28,23 +28,9 @@ public abstract class HandledScreenMixin {
 		}
 	}
 
-	@Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
-	private void nei$mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical, CallbackInfoReturnable<Boolean> cir) {
-		if (NeiHooks.mouseScrolled((HandledScreen<?>) (Object) this, mouseX, mouseY, vertical)) {
-			cir.setReturnValue(true);
-		}
-	}
-
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
 	private void nei$keyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
 		if (NeiHooks.keyPressed((HandledScreen<?>) (Object) this, keyCode, scanCode, modifiers)) {
-			cir.setReturnValue(true);
-		}
-	}
-
-	@Inject(method = "charTyped", at = @At("HEAD"), cancellable = true)
-	private void nei$charTyped(char chr, int modifiers, CallbackInfoReturnable<Boolean> cir) {
-		if (NeiHooks.charTyped((HandledScreen<?>) (Object) this, chr, modifiers)) {
 			cir.setReturnValue(true);
 		}
 	}

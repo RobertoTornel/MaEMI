@@ -4,11 +4,18 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import dev.emi.emi.api.stack.EmiStack;
+import dev.nei.NeiClient;
+import dev.nei.util.JsonFiles;
+import dev.nei.util.StackIO;
 
 /**
- * Owns the item subsets and their persistence. Implemented by the item subsystem; this contract is
- * kept deliberately small so the panel only sees what it needs.
+ * Owns the user-created item subsets and their persistence. {@code NEI} (everything) and
+ * {@code Bookmarks} are handled by the panel itself and are therefore not stored here.
  */
 public final class ItemSubsetList {
 	public static final String ALL = "NEI";
@@ -17,22 +24,107 @@ public final class ItemSubsetList {
 	private static final ItemSubsetList INSTANCE = new ItemSubsetList();
 
 	private final List<ItemSubset> subsets = new ArrayList<>();
+	private boolean loaded;
 
 	private ItemSubsetList() {
-		subsets.add(new ItemSubset(ALL, true));
-		subsets.add(new ItemSubset(BOOKMARKS, true));
 	}
 
 	public static ItemSubsetList get() {
 		return INSTANCE;
 	}
 
+	public synchronized void load(Path configDirectory) {
+		if (loaded) {
+			return;
+		}
+		loaded = true;
+		Path file = configDirectory == null ? null : configDirectory.resolve("nei-subsets.json");
+		if (file == null) {
+			return;
+		}
+		JsonObject root = JsonFiles.read(file, JsonObject.class, new JsonObject());
+		subsets.clear();
+		JsonArray array = root.has("subsets") ? root.getAsJsonArray("subsets") : new JsonArray();
+		for (JsonElement element : array) {
+			if (!element.isJsonObject()) {
+				continue;
+			}
+			JsonObject object = element.getAsJsonObject();
+			String name = object.has("name") ? object.get("name").getAsString() : "Subset";
+			ItemSubset subset = new ItemSubset(name, false);
+			if (object.has("stacks")) {
+				for (JsonElement stackElement : object.getAsJsonArray("stacks")) {
+					EmiStack stack = StackIO.read(stackElement);
+					if (!stack.isEmpty()) {
+						subset.stacks().add(stack);
+					}
+				}
+			}
+			subset.clearDirty();
+			subsets.add(subset);
+		}
+	}
+
+	public synchronized void save() {
+		Path file = file();
+		if (file == null) {
+			return;
+		}
+		JsonObject root = new JsonObject();
+		root.addProperty("version", 1);
+		JsonArray array = new JsonArray();
+		for (ItemSubset subset : subsets) {
+			JsonObject object = new JsonObject();
+			object.addProperty("name", subset.name());
+			JsonArray stacks = new JsonArray();
+			for (EmiStack stack : subset.stacks()) {
+				JsonElement element = StackIO.write(stack);
+				if (element != null) {
+					stacks.add(element);
+				}
+			}
+			object.add("stacks", stacks);
+			array.add(object);
+			subset.clearDirty();
+		}
+		root.add("subsets", array);
+		JsonFiles.write(file, root);
+	}
+
+	public void saveIfDirty() {
+		for (ItemSubset subset : subsets) {
+			if (subset.dirty()) {
+				save();
+				return;
+			}
+		}
+	}
+
+	private Path file() {
+		try {
+			return NeiClient.configDirectory().resolve("nei-subsets.json");
+		} catch (IllegalStateException e) {
+			return null;
+		}
+	}
+
 	public List<ItemSubset> subsets() {
+		ensureLoaded();
 		return subsets;
 	}
 
+	private void ensureLoaded() {
+		if (!loaded) {
+			try {
+				load(NeiClient.configDirectory());
+			} catch (IllegalStateException e) {
+				loaded = true;
+			}
+		}
+	}
+
 	public ItemSubset byName(String name) {
-		for (ItemSubset subset : subsets) {
+		for (ItemSubset subset : subsets()) {
 			if (subset.name().equals(name)) {
 				return subset;
 			}
@@ -41,25 +133,64 @@ public final class ItemSubsetList {
 	}
 
 	public ItemSubset create(String name) {
-		ItemSubset subset = new ItemSubset(name, false);
-		subsets.add(subset);
+		String unique = name == null || name.isBlank() ? "Subset" : name.trim();
+		String candidate = unique;
+		int i = 2;
+		while (byName(candidate) != null) {
+			candidate = unique + " " + i++;
+		}
+		ItemSubset subset = new ItemSubset(candidate, false);
+		subsets().add(subset);
+		save();
 		return subset;
 	}
 
+	public ItemSubset rename(ItemSubset subset, String name) {
+		if (subset == null || subset.builtin() || name == null || name.isBlank()) {
+			return null;
+		}
+		if (byName(name) != null && byName(name) != subset) {
+			return null;
+		}
+		ItemSubset replacement = new ItemSubset(name.trim(), false);
+		replacement.stacks().addAll(subset.stacks());
+		int index = subsets.indexOf(subset);
+		if (index >= 0) {
+			subsets.set(index, replacement);
+		}
+		save();
+		return replacement;
+	}
+
 	public void delete(ItemSubset subset) {
-		if (!subset.builtin()) {
+		if (subset != null && !subset.builtin()) {
 			subsets.remove(subset);
+			save();
 		}
 	}
 
 	public void addToSubset(ItemSubset subset, EmiStack stack) {
-		subset.stacks().add(stack);
-		subset.markDirty();
+		if (subset != null && subset.add(stack)) {
+			save();
+		}
 	}
 
-	public void load(Path configDirectory) {
+	public void removeFromSubset(ItemSubset subset, EmiStack stack) {
+		if (subset != null && subset.remove(stack)) {
+			save();
+		}
 	}
 
-	public void save() {
+	public void addAll(ItemSubset subset, List<EmiStack> stacks) {
+		if (subset == null) {
+			return;
+		}
+		boolean changed = false;
+		for (EmiStack stack : stacks) {
+			changed |= subset.add(stack);
+		}
+		if (changed) {
+			save();
+		}
 	}
 }

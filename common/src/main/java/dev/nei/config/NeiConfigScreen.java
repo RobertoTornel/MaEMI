@@ -156,6 +156,10 @@ public final class NeiConfigScreen {
 			.setDefaultValue(false)
 			.setSaveConsumer(v -> d.tooltip.showRegistryName = v)
 			.build());
+		tooltip.addEntry(eb.startBooleanToggle(Text.translatable("nei.config.tooltip.nbt"), d.tooltip.showNbt)
+			.setDefaultValue(false)
+			.setSaveConsumer(v -> d.tooltip.showNbt = v)
+			.build());
 		tooltip.addEntry(eb.startBooleanToggle(Text.translatable("nei.config.tooltip.tags"), d.tooltip.showTags)
 			.setDefaultValue(false)
 			.setSaveConsumer(v -> d.tooltip.showTags = v)

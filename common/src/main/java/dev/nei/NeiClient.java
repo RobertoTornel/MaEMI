@@ -1,8 +1,9 @@
 package dev.nei;
 
-import dev.nei.bookmark.Bookmarks;
+import java.nio.file.Path;
+
 import dev.nei.config.NeiConfig;
-import dev.nei.item.ItemSubsetList;
+import dev.nei.integration.EmiPanelBridge;
 import dev.nei.platform.NeiPlatform;
 
 /** Client-side singleton state, kept separate from {@link Nei} so a dedicated server never loads GUI classes. */
@@ -20,9 +21,8 @@ public final class NeiClient {
 		initialised = true;
 		platform = plt;
 		NeiConfig.load(plt.configDirectory());
-		ItemSubsetList.get().load(plt.configDirectory());
-		Bookmarks.get().load(plt.configDirectory());
 		Nei.LOG.info("[NEI] loaded config from {}", NeiConfig.file());
+		EmiPanelBridge.sync();
 	}
 
 	public static NeiPlatform platform() {
@@ -30,5 +30,14 @@ public final class NeiClient {
 			throw new IllegalStateException("NEI client not initialised");
 		}
 		return platform;
+	}
+
+	public static boolean isInitialised() {
+		return platform != null;
+	}
+
+	/** Directory holding the mod's JSON data files; available after {@link #init}. */
+	public static Path configDirectory() {
+		return platform().configDirectory();
 	}
 }

@@ -3,7 +3,13 @@ package dev.nei;
 import java.util.EnumMap;
 import java.util.Map;
 
+import dev.emi.emi.api.stack.EmiStack;
+import dev.nei.autocraft.AutoCraftService;
 import dev.nei.config.ConfigScreens;
+import dev.nei.item.HideList;
+import dev.nei.panel.NeiPanel;
+import dev.nei.panel.NeiPanelState;
+import dev.nei.util.HoveredStack;
 import dev.nei.config.NeiConfig;
 import dev.nei.platform.NeiKeybind;
 import dev.nei.platform.NeiPlatform;
@@ -56,6 +62,7 @@ public final class NeiKeybinds {
 			}
 			handle(entry.getKey());
 		}
+		AutoCraftService.tick();
 	}
 
 	public static void handle(Action action) {
@@ -64,13 +71,33 @@ public final class NeiKeybinds {
 				NeiConfigDataToggle.togglePanel();
 			}
 			case OPEN_CONFIG -> ConfigScreens.open();
+			case AUTOCRAFT -> AutoCraftService.requestCraftHovered();
+			case HIDE_ITEM -> {
+				EmiStack stack = HoveredStack.get();
+				if (!stack.isEmpty()) {
+					boolean hidden = HideList.get().toggle(stack);
+					NeiPanel.get().refresh();
+					status(hidden ? "nei.status.hidden" : "nei.status.unhidden");
+				}
+			}
+			case TOGGLE_BOOKMARKS -> {
+				NeiPanelState state = NeiPanel.get().state();
+				boolean showing = NeiPanelState.BOOKMARKS.equals(state.selectedSubset());
+				state.setSelectedSubset(showing ? null : NeiPanelState.BOOKMARKS);
+				NeiPanel.get().refresh();
+			}
 			case TOGGLE_CHEAT -> {
 				NeiConfig.get().cheat.enabled = !NeiConfig.get().cheat.enabled;
 				NeiConfig.save();
+				status(NeiConfig.get().cheat.enabled ? "nei.status.cheat_on" : "nei.status.cheat_off");
 			}
-			default -> {
-				// Implemented by the panel/autocraft subsystems once they are wired in.
-			}
+		}
+	}
+
+	private static void status(String key) {
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (client.player != null) {
+			client.player.sendMessage(net.minecraft.text.Text.translatable(key), true);
 		}
 	}
 
@@ -79,6 +106,7 @@ public final class NeiKeybinds {
 		private static void togglePanel() {
 			NeiConfig.get().panel.enabled = !NeiConfig.get().panel.enabled;
 			NeiConfig.save();
+			dev.nei.integration.EmiPanelBridge.sync();
 			MinecraftClient client = MinecraftClient.getInstance();
 			if (client.player != null) {
 				client.player.sendMessage(net.minecraft.text.Text.translatable(

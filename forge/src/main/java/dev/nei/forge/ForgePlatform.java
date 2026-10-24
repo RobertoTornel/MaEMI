@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import dev.nei.api.NeiPlugin;
 import dev.nei.config.ConfigScreens;
 import dev.nei.platform.NeiKeybind;
 import dev.nei.platform.NeiPlatform;
@@ -55,6 +56,34 @@ public final class ForgePlatform implements NeiPlatform {
 	}
 
 	@Override
+	public List<NeiPlugin> plugins() {
+		List<NeiPlugin> plugins = new ArrayList<>();
+		org.objectweb.asm.Type annotationType = org.objectweb.asm.Type.getType(dev.nei.api.NeiPluginEntrypoint.class);
+		for (net.minecraftforge.forgespi.language.ModFileScanData scan : ModList.get().getAllScanData()) {
+			for (net.minecraftforge.forgespi.language.ModFileScanData.AnnotationData data : scan.getAnnotations()) {
+				if (data.annotationType().equals(annotationType)) {
+					try {
+						Class<?> clazz = Class.forName(data.memberName());
+						if (NeiPlugin.class.isAssignableFrom(clazz)) {
+							plugins.add((NeiPlugin) clazz.getDeclaredConstructor().newInstance());
+						}
+					} catch (Throwable t) {
+						dev.nei.Nei.LOG.warn("[NEI] could not load plugin {}", data.memberName(), t);
+					}
+				}
+			}
+		}
+		return plugins;
+	}
+
+	@Override
+	public String modNameFor(String namespace) {
+		return ModList.get().getModContainerById(namespace)
+			.map(container -> container.getModInfo().getDisplayName())
+			.orElse(namespace);
+	}
+
+	@Override
 	public NeiKeybind registerKeybind(String translationKey, int defaultKey) {
 		PendingBind bind = new PendingBind(translationKey, defaultKey);
 		pending.add(bind);
@@ -82,7 +111,7 @@ public final class ForgePlatform implements NeiPlatform {
 
 		@Override
 		public boolean wasPressed() {
-			return mapping != null && mapping.consumeClick();
+			return mapping != null && mapping.wasPressed();
 		}
 
 		@Override

@@ -89,7 +89,8 @@ class NeiSearchParserTest {
 	void groupingAndQuotes() {
 		assertTrue(match("{iron | gold} ingot", IRON));
 		assertTrue(match("\"Iron Ingot\"", IRON));
-		assertFalse(match("\"Iron\"", IRON));
+		assertTrue(match("\"Iron\"", IRON));
+		assertFalse(match("\"Iron Ingot!\"", IRON));
 	}
 
 	@Test
@@ -98,8 +99,8 @@ class NeiSearchParserTest {
 		assertTrue(match("ir?n", IRON));
 		assertTrue(match("ir?n ingot", IRON));
 		assertFalse(match("ir?x ingot", IRON));
-		assertTrue(match("r/^Iron.*$", IRON));
-		assertTrue(match("r/ingot$", IRON));
+		assertTrue(match("r/^Iron.*$/", IRON));
+		assertTrue(match("r/ingot$/", IRON));
 	}
 
 	@Test

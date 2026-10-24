@@ -1,7 +1,10 @@
 package dev.nei.fabric;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
+import dev.nei.api.NeiPlugin;
 import dev.nei.config.ConfigScreens;
 import dev.nei.platform.NeiKeybind;
 import dev.nei.platform.NeiPlatform;
@@ -47,6 +50,22 @@ public final class FabricPlatform implements NeiPlatform {
 		MinecraftClient client = MinecraftClient.getInstance();
 		client.setScreen(ConfigScreens.create(parent == null ? client.currentScreen : parent));
 		return true;
+	}
+
+	@Override
+	public List<NeiPlugin> plugins() {
+		List<NeiPlugin> plugins = new ArrayList<>();
+		for (var container : FabricLoader.getInstance().getEntrypointContainers("nei", NeiPlugin.class)) {
+			plugins.add(container.getEntrypoint());
+		}
+		return plugins;
+	}
+
+	@Override
+	public String modNameFor(String namespace) {
+		return FabricLoader.getInstance().getModContainer(namespace)
+			.map(container -> container.getMetadata().getName())
+			.orElse(namespace);
 	}
 
 	@Override

@@ -19,6 +19,7 @@ public final class NeiHooks {
 
 	public static void render(DrawContext context, Screen screen, int mouseX, int mouseY, float delta) {
 		if (active(screen)) {
+			NeiPanel.get().onScreenChanged(screen);
 			NeiPanel.get().render(context, screen, mouseX, mouseY, delta);
 		}
 	}

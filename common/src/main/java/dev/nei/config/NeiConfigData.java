@@ -99,6 +99,7 @@ public final class NeiConfigData {
 		public boolean showModName = true;
 		public boolean showRegistryName = false;
 		public boolean showTags = false;
+		public boolean showNbt = false;
 		public boolean showItemCount = true;
 		public boolean showRecipeHint = true;
 	}
