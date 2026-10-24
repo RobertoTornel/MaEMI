@@ -9,6 +9,7 @@
 	"environment": "client",
 	"entrypoints": {
 		"client": ["dev.nei.fabric.NeiFabric"],
+		"modmenu": ["dev.nei.fabric.NeiModMenu"],
 		"emi": ["dev.nei.compat.emi.NeiEmiPlugin"]
 	},
 	"mixins": ["nei.mixins.json"],
@@ -19,6 +20,7 @@
 		"emi": ">=1.1.20"
 	},
 	"recommends": {
-		"cloth-config": ">=11.0.0"
+		"cloth-config": ">=11.0.0",
+		"modmenu": ">=7.0.0"
 	}
 }

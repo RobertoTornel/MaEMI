@@ -78,6 +78,14 @@ public final class NeiConfigScreen {
 			.setDefaultValue(true)
 			.setSaveConsumer(v -> d.panel.showTabs = v)
 			.build());
+		panel.addEntry(eb.startBooleanToggle(Text.translatable("nei.config.panel.replace_emi"), d.panel.replaceEmiIndex)
+			.setDefaultValue(false)
+			.setTooltip(Text.translatable("nei.config.panel.replace_emi.tooltip"))
+			.setSaveConsumer(v -> {
+				d.panel.replaceEmiIndex = v;
+				dev.nei.integration.EmiPanelBridge.sync();
+			})
+			.build());
 
 		ConfigCategory search = builder.getOrCreateCategory(Text.translatable("nei.config.search"));
 		search.addEntry(eb.startEnumSelector(Text.translatable("nei.config.search.mode"), NeiConfigData.SearchMode.class, d.search.mode)

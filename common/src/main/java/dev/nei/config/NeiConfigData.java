@@ -41,6 +41,8 @@ public final class NeiConfigData {
 		public Sort sort = Sort.MOD;
 		/** Keep the search text between screens. */
 		public boolean rememberSearch = true;
+		/** Hide EMI's index sidebar on our side so the NEI panel can take its place. */
+		public boolean replaceEmiIndex = false;
 		public int tooltipLines = 0;
 	}
 
