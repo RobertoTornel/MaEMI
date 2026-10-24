@@ -10,7 +10,7 @@ forking it.
 | Panel side, columns, rows, scale | ported | `NeiConfigData.Panel`, Cloth screen |
 | Panel search bar | ported | `NeiPanelRenderer`, `NeiPanelInput` |
 | NEI search language | ported | `dev.nei.search` (unit tested) |
-| Item subsets (create/rename/delete, add/remove items) | ported | `dev.nei.item` |
+| Item subsets (create/rename/delete, add/remove items) | ported | `dev.nei.item`; shift+right-click a subset tab to rename or delete it (`SubsetEditScreen`) |
 | Subset persistence | ported | `config/nei-subsets.json` |
 | Bookmarks + bookmark groups | ported | `dev.nei.bookmark` |
 | Bookmark persistence and history | ported | `config/nei-bookmarks.json` |
@@ -35,6 +35,7 @@ forking it.
 | Item dump to text files | ported | `DumpService`, `F8` |
 | Key bindings | ported | loader key mapping, `NeiKeybinds` |
 | Config GUI | ported (Cloth Config) | `NeiConfigScreen`, fallback screen |
+| On-screen status messages | ported (new) | `NeiPanelRenderer.drawStatus` |
 | Profiler overlay | not ported | vanilla has a profiler |
 | Enchantment/potion helper tabs | not ported | outside the request scope |
 | Loader compatibility modules | ported (new) | `dev.nei.compat` |
@@ -42,9 +43,10 @@ forking it.
 ## Behaviour notes
 
 * The panel never steals clicks outside its bounds; EMI's panels keep working.
-* `showEverywhere` exists but the panel is only rendered for container screens. Rendering it over
-  EMI's recipe screens needs an input hook for non-container screens and is tracked in
-  [PORTING.md](PORTING.md).
+* `showEverywhere` also renders the panel on plain screens (anything that calls `super.render`);
+  screens that draw their own content after `super` can cover parts of it, and input only follows
+  screens that call `super` in `mouseClicked`/`keyPressed`. Container screens remain the supported,
+  fully interactive case.
 * Autocrafting requires an open screen whose handler can craft the recipe (the player inventory for
   2×2, a crafting table for 3×3). It refuses to start rather than consuming items it cannot finish.
 * Cheat actions are only offered when the player is in creative or has permission level 2; the client

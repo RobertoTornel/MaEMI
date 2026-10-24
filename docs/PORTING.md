@@ -53,12 +53,14 @@ behaviour** on top of EMI instead.
 ```
 HandledScreenMixin   render TAIL; mouseClicked/keyPressed HEAD
 HandledScreenAccessor x, y, backgroundWidth/Height, handler, focusedSlot
-ParentElementMixin   mouseScrolled/charTyped (Screen inherits these defaults)
+KeyboardMixin        Keyboard#onChar -> panel typing
+MouseMixin           Mouse#onMouseScroll -> panel scrolling
 ItemStackTooltipMixin getTooltip RETURN
 ```
 
-`ParentElement` is deliberate: `HandledScreen` does not override `mouseScrolled` or `charTyped`,
-so a mixin on `HandledScreen` for those methods would never apply.
+The input layer is deliberate: `Screen.charTyped` and `Screen.mouseScrolled` are interface defaults
+(`ParentElement`), and Mixin refuses to inject into interface default methods on Forge. Hooking
+`Keyboard#onChar` and `Mouse#onMouseScroll` works identically on both loaders.
 
 ## Known gaps
 

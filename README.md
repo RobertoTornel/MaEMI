@@ -17,7 +17,9 @@ compatibility module turns itself off when the mod it targets is not installed.
   `{ }`, wildcards `*` and `?`, regular expressions `r/.../`, and the prefixes
   `@mod` (mod name/id), `$tag` (item tag), `#tooltip` and `&identifier`.
 * **Item subsets**: `NEI` (everything), `Bookmarks`, and any number of user subsets created
-  from the panel, stored in `config/nei-subsets.json`.
+  from the panel (right-click a tab to add one; shift+right-click a user tab to rename or delete
+  it), stored in `config/nei-subsets.json`. Narrow panels shorten tab labels and show the full
+  name as a tooltip instead of hiding tabs.
 * **Bookmarks**: named groups plus a "recently looked at" history, in
   `config/nei-bookmarks.json`. Right-click a panel item to bookmark it.
 * **Hidden items**: `H` hides the hovered item; the list lives in `config/nei-hidden.json`.
@@ -28,6 +30,8 @@ compatibility module turns itself off when the mod it targets is not installed.
 * **Autocrafting**: `C` plans how to obtain the hovered item from what you carry, expands the
   recipe tree (inputs first, cycle-safe), then runs the plan through EMI's own recipe filler. It
   obeys the open screen's rules and stops with a clear message when a step cannot be performed.
+  Progress and errors are drawn at the bottom of the screen and copied to chat, so they are readable
+  while the GUI is open.
 * **Cheat/utility actions**: creative give (click), trash, heal, time, weather, gamemode, enchant,
   spawn, each permission-checked. Right-click the "?" button to open the utility screen.
 * **Tooltip augmentation**: registry id, mod name, stack size, tags and (optional) NBT.
@@ -51,6 +55,13 @@ instead of previewing it. See [docs/PORTING.md](docs/PORTING.md).
 
 Client only. The jars are in `fabric/build/libs` and `forge/build/libs`.
 
+Both jars are built against **EMI 1.1.22** (the version shipped by Monifactory) and accept EMI
+1.1.20 or newer. The Fabric and Forge dev clients were both run on EMI 1.1.22: NEI initialises,
+the EMI plugin registers, the panel renders next to the inventory, typing filters the grid, the
+mouse wheel pages it, and `O` both hides and restores the panel from inside a GUI. Forge
+47.2.0 shows zero mixin failures. Autocrafting execution is accepted by EMI's filler for recipes
+the open screen supports; see the limitations below before promising a full GregTech chain.
+
 ## Default keys
 
 | Key | Action |
@@ -62,7 +73,8 @@ Client only. The jars are in `fabric/build/libs` and `forge/build/libs`.
 | `H` | hide the hovered item |
 | `F8` | dump items/recipes/tags |
 
-All bindings are in `Options → Controls → Not Enough Items`.
+All bindings are in `Options → Controls → Not Enough Items`. They also work while a container GUI
+is open (vanilla key bindings do not), and are suppressed while the panel search field has focus.
 
 ## Compatibility
 
@@ -72,6 +84,20 @@ Mekanism, Thermal, Immersive Engineering, Botania, Ars Nouveau, Tinkers', Farmer
 Industrialization, Powah, Ad Astra) and data-driven tooltips. A module whose required mod is missing
 is skipped before its classes are touched, and the reason is logged. See
 [docs/COMPAT.md](docs/COMPAT.md).
+
+## Known limitations
+
+* **Autocrafting runs through EMI's recipe handlers.** It can fill any screen EMI can fill (player
+  crafting grid, crafting table, and machines whose mod ships an EMI handler). GregTech machines and
+  other blocks without a fillable handler are planned but cannot be executed automatically; the
+  service reports the step it cannot perform instead of dropping items on the floor.
+* **Ghost recipe preview** on the crafting grid is not implemented. EMI's recipe screen and its own
+  craft button cover the workflow; NEI's overlay rendered the recipe in-place.
+* **The panel is built for container screens.** `showEverywhere` extends it to screens that call
+  `super.render`, but screens that draw over it can cover the panel, and only screens that call
+  `super` for input receive clicks.
+* Compatibility subsets are namespace-based, matching NEI's per-mod item list rather than its
+  hand-written handler blacklists.
 
 ## Building
 

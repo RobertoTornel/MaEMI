@@ -1,15 +1,17 @@
 {
-	"required": true,
-	"minVersion": "0.8",
-	"package": "dev.nei.mixin",
-	"compatibilityLevel": "JAVA_17",
-	"client": [
-		"HandledScreenAccessor",
-		"HandledScreenMixin",
-		"ItemStackTooltipMixin",
-		"ParentElementMixin"
-	],
-	"injectors": {
-		"defaultRequire": 1
-	}
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.nei.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "HandledScreenAccessor",
+    "HandledScreenMixin",
+    "ItemStackTooltipMixin",
+    "KeyboardMixin",
+    "MouseMixin",
+    "ScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

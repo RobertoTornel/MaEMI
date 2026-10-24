@@ -53,6 +53,13 @@ public final class NeiPanelInput {
 		if (tab != null) {
 			state.setSearchFocused(false);
 			if (button == 1) {
+				if (Screen.hasShiftDown() && tab.subset != null
+						&& !NeiPanelState.BOOKMARKS.equals(tab.subset)) {
+					// Shift+right-click edits a user subset instead of selecting or creating one.
+					MinecraftClient client = MinecraftClient.getInstance();
+					client.setScreen(new SubsetEditScreen(screen, tab.subset));
+					return true;
+				}
 				// Right-clicking a tab creates a new subset, like NEI's "..." button.
 				ItemSubset created = ItemSubsetList.get().create("Subset");
 				state.setSelectedSubset(created.name());
@@ -188,7 +195,7 @@ public final class NeiPanelInput {
 
 	public static boolean keyPressed(Screen screen, NeiPanelLayout layout, NeiPanelState state,
 			int keyCode, int scanCode, int modifiers) {
-		if (state == null || !state.isSearchFocused()) {
+		if (state == null) {
 			return false;
 		}
 		if (!state.isSearchFocused()) {

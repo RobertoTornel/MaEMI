@@ -58,6 +58,12 @@ public final class ItemPanelSource {
 			return cached;
 		}
 		List<EmiStack> built = build(config);
+		// EMI rebuilds its index during startup and resource reloads; an empty index is not an
+		// empty panel. Keep the last good list instead of flashing "No items to show".
+		if (built.isEmpty() && !cached.isEmpty() && sourceIsIndex()
+				&& EmiApi.getIndexStacks().isEmpty()) {
+			return cached;
+		}
 		cached = Collections.unmodifiableList(built);
 		signature = current;
 		return cached;
@@ -65,6 +71,11 @@ public final class ItemPanelSource {
 
 	public int size() {
 		return stacks().size();
+	}
+
+	private boolean sourceIsIndex() {
+		NeiPanelState state = NeiPanel.get().state();
+		return state.selectedSubset() == null;
 	}
 
 	private String signature(NeiConfigData config) {

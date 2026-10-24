@@ -64,14 +64,17 @@ public final class NeiPanelLayout {
 	/** A clickable subset tab in the footer. */
 	public static final class Tab {
 		public final String label;
+		/** Full name, shown as a tooltip when the label had to be shortened. */
+		public final String title;
 		public final String subset;
 		public final int x;
 		public final int y;
 		public final int width;
 		public final int height;
 
-		Tab(String label, String subset, int x, int y, int width, int height) {
+		Tab(String label, String title, String subset, int x, int y, int width, int height) {
 			this.label = label;
+			this.title = title;
 			this.subset = subset;
 			this.x = x;
 			this.y = y;
@@ -184,16 +187,19 @@ public final class NeiPanelLayout {
 		int rightLimit = pageX - 4;
 		int x = panelX + PADDING;
 
-		x = appendTab(result, Text.translatable("nei.panel.nei").getString(), null, textRenderer, x, y, height, rightLimit);
-		x = appendTab(result, Text.translatable("nei.panel.bookmarks").getString(), NeiPanelState.BOOKMARKS,
-				textRenderer, x, y, height, rightLimit);
+		String nei = Text.translatable("nei.panel.nei").getString();
+		x = appendTab(result, nei, nei, null, textRenderer, x, y, height, rightLimit);
+		// The star keeps the bookmarks tab available even when the panel is too narrow for its name.
+		String bookmarks = Text.translatable("nei.panel.bookmarks").getString();
+		x = appendTab(result, "*", bookmarks, NeiPanelState.BOOKMARKS, textRenderer, x, y, height, rightLimit);
 
 		try {
 			for (dev.nei.item.ItemSubset subset : dev.nei.item.ItemSubsetList.get().subsets()) {
 				if (subset == null || subset.name() == null || subset.name().isBlank()) {
 					break;
 				}
-				int next = appendTab(result, subset.name(), subset.name(), textRenderer, x, y, height, rightLimit);
+				String name = subset.name();
+				int next = appendTab(result, name, name, name, textRenderer, x, y, height, rightLimit);
 				if (next == x) {
 					break;
 				}
@@ -205,14 +211,31 @@ public final class NeiPanelLayout {
 		return result;
 	}
 
-	private static int appendTab(List<Tab> tabs, String label, String subset, TextRenderer textRenderer,
-			int x, int y, int height, int rightLimit) {
-		int width = width(textRenderer, label) + 6;
-		if (label == null || label.isBlank() || x + width > rightLimit) {
+	private static int appendTab(List<Tab> tabs, String label, String title, String subset,
+			TextRenderer textRenderer, int x, int y, int height, int rightLimit) {
+		if (label == null || label.isBlank()) {
 			return x;
 		}
-		tabs.add(new Tab(label, subset, x, y, width, height));
-		return x + width + 1;
+		int full = width(textRenderer, label) + 6;
+		int available = rightLimit - x;
+		if (available < 8) {
+			return x;
+		}
+		// Narrow panels cannot show every tab label. Keep every tab reachable: shorten the label
+		// instead of dropping the tab, so a user subset never becomes invisible.
+		String shown = label;
+		int tabWidth = full;
+		if (full > available) {
+			tabWidth = available;
+			shown = textRenderer.trimToWidth(label, Math.max(1, tabWidth - 8));
+			if (shown.isEmpty()) {
+				shown = "\u2026";
+			} else if (!shown.equals(label)) {
+				shown = shown + "\u2026";
+			}
+		}
+		tabs.add(new Tab(shown, title, subset, x, y, tabWidth, height));
+		return x + tabWidth + 1;
 	}
 
 	public int slotX(int column) {

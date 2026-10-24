@@ -145,28 +145,53 @@ public final class ItemSubsetList {
 		return subset;
 	}
 
-	public ItemSubset rename(ItemSubset subset, String name) {
-		if (subset == null || subset.builtin() || name == null || name.isBlank()) {
+	public synchronized ItemSubset rename(ItemSubset subset, String name) {
+		if (subset == null || subset.builtin() || name == null) {
 			return null;
 		}
-		if (byName(name) != null && byName(name) != subset) {
+		String trimmed = name.trim();
+		if (trimmed.isEmpty()) {
 			return null;
 		}
-		ItemSubset replacement = new ItemSubset(name.trim(), false);
+		List<ItemSubset> current = subsets();
+		int index = current.indexOf(subset);
+		if (index < 0) {
+			return null;
+		}
+		if (trimmed.equals(subset.name())) {
+			return subset;
+		}
+		if (isNameTaken(trimmed)) {
+			return null;
+		}
+		ItemSubset replacement = new ItemSubset(trimmed, false);
 		replacement.stacks().addAll(subset.stacks());
-		int index = subsets.indexOf(subset);
-		if (index >= 0) {
-			subsets.set(index, replacement);
-		}
+		current.set(index, replacement);
 		save();
 		return replacement;
 	}
 
-	public void delete(ItemSubset subset) {
-		if (subset != null && !subset.builtin()) {
-			subsets.remove(subset);
-			save();
+	/** True when a stored subset or one of the virtual tabs already uses this name. */
+	public synchronized boolean isNameTaken(String name) {
+		if (name == null) {
+			return false;
 		}
+		String trimmed = name.trim();
+		if (trimmed.isEmpty()) {
+			return false;
+		}
+		if (ALL.equals(trimmed) || BOOKMARKS.equals(trimmed)) {
+			return true;
+		}
+		return byName(trimmed) != null;
+	}
+
+	public synchronized boolean delete(ItemSubset subset) {
+		if (subset == null || subset.builtin() || !subsets().remove(subset)) {
+			return false;
+		}
+		save();
+		return true;
 	}
 
 	public void addToSubset(ItemSubset subset, EmiStack stack) {

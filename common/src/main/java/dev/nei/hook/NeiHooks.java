@@ -15,6 +15,9 @@ public final class NeiHooks {
 	}
 
 	private static boolean active(Screen screen) {
+		if (screen instanceof dev.nei.panel.SubsetEditScreen) {
+			return false;
+		}
 		return NeiConfig.get().general.enabled && NeiConfig.get().panel.enabled
 			&& (NeiConfig.get().general.showEverywhere || screen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>);
 	}
@@ -39,10 +42,13 @@ public final class NeiHooks {
 	}
 
 	public static boolean keyPressed(Screen screen, int keyCode, int scanCode, int modifiers) {
-		if (!active(screen)) {
+		// Action keys stay available while the panel is disabled, so O can turn it back on from
+		// inside a GUI. On non-container screens they are only routed when the panel can appear.
+		boolean container = screen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>;
+		if (!container && !NeiConfig.get().general.showEverywhere) {
 			return false;
 		}
-		if (NeiPanel.get().keyPressed(screen, keyCode, scanCode, modifiers)) {
+		if (active(screen) && NeiPanel.get().keyPressed(screen, keyCode, scanCode, modifiers)) {
 			return true;
 		}
 		return dev.nei.NeiKeybinds.handleKeyPressed(keyCode, scanCode, modifiers);

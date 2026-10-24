@@ -40,7 +40,7 @@ public final class NeiPanelRenderer {
 		drawFrame(context, layout);
 		drawItems(context, client, textRenderer, layout, state, stacks, mouseX, mouseY);
 		drawHeader(context, textRenderer, layout, state, mouseX, mouseY);
-		drawTabs(context, textRenderer, layout, state);
+		drawTabs(context, textRenderer, layout, state, mouseX, mouseY);
 		drawPageLabel(context, textRenderer, layout);
 		drawHelp(context, textRenderer, layout, mouseX, mouseY);
 
@@ -187,20 +187,27 @@ public final class NeiPanelRenderer {
 	}
 
 	private static void drawTabs(DrawContext context, TextRenderer textRenderer, NeiPanelLayout layout,
-			NeiPanelState state) {
+			NeiPanelState state, int mouseX, int mouseY) {
 		if (layout.tabs.isEmpty()) {
 			return;
 		}
 		String selected = state.selectedSubset();
+		String hoveredTitle = null;
 		for (NeiPanelLayout.Tab tab : layout.tabs) {
 			boolean active = java.util.Objects.equals(tab.subset, selected);
 			context.fill(tab.x, tab.y, tab.x + tab.width, tab.y + tab.height,
 					active ? TAB_SELECTED : TAB_BACKGROUND);
 			context.fill(tab.x, tab.y + tab.height - 1, tab.x + tab.width, tab.y + tab.height,
 					active ? TEXT : INNER_BORDER);
+			if (tab.title != null && !tab.title.equals(tab.label) && tab.contains(mouseX, mouseY)) {
+				hoveredTitle = tab.title;
+			}
 			int textWidth = textRenderer.getWidth(tab.label);
 			context.drawText(textRenderer, tab.label,
 					tab.x + (tab.width - textWidth) / 2, tab.y + 3, active ? TEXT : TEXT_DIM, false);
+		}
+		if (hoveredTitle != null) {
+			context.drawTooltip(textRenderer, List.of(Text.literal(hoveredTitle)), mouseX, mouseY);
 		}
 	}
 

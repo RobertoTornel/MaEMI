@@ -5,7 +5,7 @@
 1. **Port NEI's functionality, not its 2013 plumbing.** NEI's 1.7.10 code depends on
    `GuiContainerManager`, ASM transformers, Item IDs and a packet channel that simply do not exist
    on 1.20.1. Everything is re-implemented against modern Minecraft and EMI.
-2. **EMI is the host, never a fork.** We depend on the published `dev.emi:emi-*:1.1.24+1.20.1`
+2. **EMI is the host, never a fork.** We depend on the published `dev.emi:emi-*:1.1.22+1.20.1`
    artifact, register through `dev.emi.emi.api.*`, and keep the handful of mixins that reach into
    EMI or vanilla internals in one place. No EMI source is copied or patched.
 3. **Multiloader by construction.** `common` holds every feature. `fabric` and `forge` only provide
@@ -44,7 +44,8 @@
 - `configDirectory`
 - `sendCommand` (chat commands used by utility buttons)
 - `openConfigScreen`
-- `registerKeybind`
+- `registerKeybind` / `matchesKeybind` (the latter lets the panel react to keys while a GUI is open,
+  where vanilla key bindings do not fire)
 
 Both platforms call `Nei.init(platform)` and `NeiClient.init(platform)` from their client-only
 initialiser. The Forge mod class checks `FMLEnvironment.dist == Dist.CLIENT` before touching any
@@ -59,10 +60,30 @@ Mixins are additive and confined to the client:
   actually consumed the event).
 - `HandledScreenAccessor` — `x`, `y`, `backgroundWidth`, `backgroundHeight`, `handler`,
   `focusedSlot`, needed to position the panel and to find the hovered slot.
+- `ScreenMixin` — optional (`showEverywhere`) rendering/input on non-container screens.
+- `KeyboardMixin` / `MouseMixin` — `Screen.charTyped` and `Screen.mouseScrolled` are interface
+  defaults, which Mixin cannot inject into on Forge. The hooks sit in `Keyboard#onChar` and
+  `Mouse#onMouseScroll` instead, so both loaders see panel typing and scrolling.
 - `ItemStackTooltipMixin` — appends mod/id/tag/NBT/spawner lines to item tooltips.
 
 No mixin targets EMI unless a feature genuinely cannot be reached through the API; when one does, it
 is documented here with the EMI version it was verified against.
+
+## Input routing
+
+Vanilla key bindings do not fire while a screen is open. `NeiHooks.keyPressed` is called first by
+`HandledScreenMixin`; it gives the panel the event, then asks `NeiKeybinds.handleKeyPressed`, which
+compares the event against the loader registrations through `NeiPlatform.matchesKeybind`. When no
+screen is open, `NeiKeybinds.tick` drains the normal bindings instead. A press handled by the screen
+is still drained in `tick` so it cannot fire a second time when the player closes the GUI. Text typed
+into a focused search field is consumed by the panel before any action key is considered.
+
+## Feedback
+
+`dev.nei.util.Messages` writes to chat history and to `NeiPanelState.status`, and the panel draws that
+status line at the bottom of the screen. The HUD (including chat) is hidden behind container screens,
+so an action-bar message alone would be invisible exactly when autocrafting or subsets need to
+report something.
 
 ## Persistence
 

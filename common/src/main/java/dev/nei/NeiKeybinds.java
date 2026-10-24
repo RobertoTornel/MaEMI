@@ -55,6 +55,8 @@ public final class NeiKeybinds {
 	}
 
 	public static void tick() {
+		// Crafting must keep running even if the panel was toggled off mid-plan.
+		AutoCraftService.tick();
 		if (!NeiConfig.get().general.enabled) {
 			return;
 		}
@@ -70,7 +72,6 @@ public final class NeiKeybinds {
 				handle(entry.getKey());
 			}
 		}
-		AutoCraftService.tick();
 	}
 
 	/** Called from the screen hook, where vanilla key bindings do not fire. */

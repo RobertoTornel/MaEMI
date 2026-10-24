@@ -22,9 +22,12 @@ import net.minecraft.text.Text;
  * handler's rules instead of injecting items, and it stops as soon as a step fails.
  */
 public final class AutoCraftService {
+	private static final int MAX_FILL_FAILURES = 3;
+
 	private static CraftPlan plan;
 	private static int stepIndex;
 	private static int delay;
+	private static int failures;
 
 	private AutoCraftService() {
 	}
@@ -51,6 +54,8 @@ public final class AutoCraftService {
 			return;
 		}
 		CraftPlan candidate = CraftPlanner.plan(target, amount);
+		Nei.LOG.info("[NEI] autocraft {} x{}: {} step(s), missing {}",
+			dev.nei.util.StackIO.key(target), amount, candidate.steps().size(), candidate.missing());
 		if (!candidate.missing().isEmpty()) {
 			message(Text.translatable("nei.autocraft.missing", String.join(", ", candidate.missing())));
 			return;
@@ -62,6 +67,7 @@ public final class AutoCraftService {
 		plan = candidate;
 		stepIndex = 0;
 		delay = 2;
+		failures = 0;
 		message(Text.translatable("nei.autocraft.start", candidate.steps().size()));
 		if (!(client.currentScreen instanceof HandledScreen)) {
 			client.setScreen(new InventoryScreen(client.player));
@@ -89,6 +95,12 @@ public final class AutoCraftService {
 			return;
 		}
 		CraftStep step = plan.steps().get(stepIndex);
+		// Only hand the recipe to a handler that actually accepts it for this screen. Otherwise
+		// performFill would fail and the old code would count the step as done anyway.
+		if (EmiRecipeFiller.getFirstValidHandler(step.recipe(), screen) == null) {
+			onFillFailure();
+			return;
+		}
 		boolean crafted = false;
 		try {
 			crafted = EmiRecipeFiller.performFill(step.recipe(), screen, EmiCraftContext.Type.CRAFTABLE,
@@ -96,10 +108,21 @@ public final class AutoCraftService {
 		} catch (Throwable t) {
 			Nei.LOG.error("[NEI] autocraft step failed", t);
 		}
+		if (!crafted) {
+			onFillFailure();
+			return;
+		}
+		failures = 0;
 		stepIndex++;
 		delay = 2;
-		if (!crafted) {
-			message(Text.translatable("nei.autocraft.stuck", stepIndex));
+	}
+
+	/** A failed fill leaves the step in place; a few consecutive failures abort the request. */
+	private static void onFillFailure() {
+		failures++;
+		delay = 4;
+		if (failures >= MAX_FILL_FAILURES) {
+			message(Text.translatable("nei.autocraft.stuck", stepIndex + 1));
 			cancel();
 		}
 	}
@@ -107,11 +130,14 @@ public final class AutoCraftService {
 	private static void finish() {
 		message(Text.translatable("nei.autocraft.done", plan.steps().size()));
 		plan = null;
+		failures = 0;
 	}
 
 	public static void cancel() {
 		plan = null;
 		stepIndex = 0;
+		delay = 0;
+		failures = 0;
 	}
 
 	public static boolean isCrafting() {
@@ -139,7 +165,7 @@ public final class AutoCraftService {
 			if (node.children != null) {
 				node.children.forEach(queue::push);
 			}
-			if (node.recipe == null) {
+			if (node.recipe == null || EmiRecipeFiller.getFirstValidHandler(node.recipe, screen) == null) {
 				continue;
 			}
 			try {
@@ -160,9 +186,6 @@ public final class AutoCraftService {
 	}
 
 	private static void message(Text text) {
-		MinecraftClient client = MinecraftClient.getInstance();
-		if (client.player != null) {
-			client.player.sendMessage(text, false);
-		}
+		dev.nei.util.Messages.status(text);
 	}
 }
