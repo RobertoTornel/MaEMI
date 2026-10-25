@@ -45,7 +45,7 @@ public final class CraftPlanner {
 		state.hint = ToolIdentity.materialOf(target);
 		int maxDepth = Math.max(1, NeiConfig.get().autocraft.maxDepth);
 		plan(target, requested, 0, state, new HashSet<>(), maxDepth);
-		return new CraftPlan(target, requested, state.steps, List.copyOf(state.missing));
+		return new CraftPlan(target, requested, orderSteps(state.steps), List.copyOf(state.missing));
 	}
 
 	/**
@@ -70,7 +70,7 @@ public final class CraftPlanner {
 		long have = state.stock.getOrDefault(stockKey(target), 0L);
 		int maxDepth = Math.max(1, NeiConfig.get().autocraft.maxDepth);
 		plan(target, have + requested, 0, state, new HashSet<>(), maxDepth);
-		return new CraftPlan(target, requested, state.steps, List.copyOf(state.missing));
+		return new CraftPlan(target, requested, orderSteps(state.steps), List.copyOf(state.missing));
 	}
 
 	/**
@@ -212,6 +212,13 @@ public final class CraftPlanner {
 		if (options.isEmpty()) {
 			state.missing.add(describe(input));
 			return false;
+		}
+		if (options.size() > 1) {
+			List<String> keys = new ArrayList<>();
+			for (int i = 0; i < options.size() && i < 8; i++) {
+				keys.add(stockKey(options.get(i)));
+			}
+			Nei.LOG.info("[MaEMI] tag input {}: {} option(s) {}", describe(input), options.size(), keys);
 		}
 		Set<String> bestFailure = null;
 		for (EmiStack option : options) {
@@ -355,31 +362,42 @@ public final class CraftPlanner {
 	private static List<EmiStack> inputOptions(EmiIngredient input, long needed, State state, Set<String> path) {
 		List<EmiStack> options = new ArrayList<>();
 		Set<String> seen = new HashSet<>();
+		Map<String, Integer> tiers = new HashMap<>();
+		Map<String, Integer> materials = new HashMap<>();
+		Map<String, Long> stock = new HashMap<>();
 		for (EmiStack candidate : input.getEmiStacks()) {
-			if (candidate == null || candidate.isEmpty() || !seen.add(stockKey(candidate))) {
+			String key = stockKey(candidate);
+			if (candidate == null || candidate.isEmpty() || !seen.add(key)) {
 				continue;
 			}
 			options.add(candidate);
+			// Score each candidate once. The comparator used to re-run recipe lookups for every
+			// comparison, which is where the pause after pressing C came from.
+			tiers.put(key, optionTier(candidate, needed, state, path));
+			materials.put(key, materialScore(candidate, state.hint));
+			stock.put(key, state.stock.getOrDefault(key, 0L));
 		}
 		options.sort((a, b) -> {
-			int tierA = optionTier(a, needed, state, path);
-			int tierB = optionTier(b, needed, state, path);
+			String keyA = stockKey(a);
+			String keyB = stockKey(b);
+			int tierA = tiers.getOrDefault(keyA, 0);
+			int tierB = tiers.getOrDefault(keyB, 0);
 			if (tierA != tierB) {
 				return Integer.compare(tierB, tierA);
 			}
 			// Among equally available candidates, keep the target's material: a wrought iron
 			// tool recipe should ask for a wrought iron file, not an aluminium one.
-			int materialA = materialScore(a, state.hint);
-			int materialB = materialScore(b, state.hint);
+			int materialA = materials.getOrDefault(keyA, 0);
+			int materialB = materials.getOrDefault(keyB, 0);
 			if (materialA != materialB) {
 				return Integer.compare(materialB, materialA);
 			}
-			long haveA = state.stock.getOrDefault(stockKey(a), 0L);
-			long haveB = state.stock.getOrDefault(stockKey(b), 0L);
+			long haveA = stock.getOrDefault(keyA, 0L);
+			long haveB = stock.getOrDefault(keyB, 0L);
 			if (haveA != haveB) {
 				return Long.compare(haveB, haveA);
 			}
-			return stockKey(a).compareTo(stockKey(b));
+			return keyA.compareTo(keyB);
 		});
 		return options;
 	}
@@ -399,12 +417,53 @@ public final class CraftPlanner {
 		String key = stockKey(stack);
 		long have = state.stock.getOrDefault(key, 0L);
 		if (have >= needFor(stack, needed)) {
+			return 4;
+		}
+		if (!path.contains(key) && shallowCraftable(stack, state, path)) {
 			return 3;
 		}
 		if (!path.contains(key) && hasRecipe(stack, state)) {
 			return 2;
 		}
 		return have > 0 ? 1 : 0;
+	}
+
+	/**
+	 * True when at least one allowed recipe for the stack has every input already in stock. Used
+	 * only to order tag candidates: oak planks made from oak logs in your inventory should be tried
+	 * before some modded plank whose log you have never seen.
+	 */
+	private static boolean shallowCraftable(EmiStack stack, State state, Set<String> path) {
+		String key = stockKey(stack);
+		for (EmiRecipe recipe : RecipeRegistry.recipesFor(stack)) {
+			if (recipe == null || producedAmount(recipe, stack) <= 0 || !state.allowed.test(recipe)
+					|| consumesTarget(recipe, stack)) {
+				continue;
+			}
+			boolean all = true;
+			for (EmiIngredient input : recipe.getInputs()) {
+				if (input == null || input.isEmpty()) {
+					continue;
+				}
+				boolean found = false;
+				for (EmiStack candidate : input.getEmiStacks()) {
+					if (candidate != null && !candidate.isEmpty()
+							&& state.stock.getOrDefault(stockKey(candidate), 0L)
+								>= needFor(candidate, Math.max(1, input.getAmount()))) {
+						found = true;
+						break;
+					}
+				}
+				if (!found) {
+					all = false;
+					break;
+				}
+			}
+			if (all) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static boolean hasRecipe(EmiStack stack, State state) {
@@ -476,6 +535,76 @@ public final class CraftPlanner {
 
 	private static boolean isReusableTool(EmiStack stack) {
 		return ToolIdentity.isTool(stack);
+	}
+
+	/**
+	 * Orders the steps so every ingredient is produced before the step that consumes it. Recipe
+	 * exploration can reserve stock in an order that is not the execution order (a later planned
+	 * step may be what makes an earlier one possible); executing the raw list would then fail on
+	 * an ingredient that only appears further down. The sort is stable, so independent steps keep
+	 * the order the planner chose.
+	 */
+	private static List<CraftStep> orderSteps(List<CraftStep> steps) {
+		int size = steps.size();
+		if (size < 2) {
+			return steps;
+		}
+		Map<String, List<Integer>> producers = new HashMap<>();
+		for (int i = 0; i < size; i++) {
+			for (EmiStack output : steps.get(i).recipe().getOutputs()) {
+				String key = stockKey(output);
+				if (!key.isEmpty()) {
+					producers.computeIfAbsent(key, k -> new ArrayList<>()).add(i);
+				}
+			}
+		}
+		List<List<Integer>> after = new ArrayList<>(size);
+		int[] indegree = new int[size];
+		for (int i = 0; i < size; i++) {
+			after.add(new ArrayList<>());
+		}
+		for (int consumer = 0; consumer < size; consumer++) {
+			Set<Integer> dependencies = new LinkedHashSet<>();
+			for (EmiIngredient input : steps.get(consumer).recipe().getInputs()) {
+				if (input == null || input.isEmpty()) {
+					continue;
+				}
+				for (EmiStack candidate : input.getEmiStacks()) {
+					String key = stockKey(candidate);
+					for (int producer : producers.getOrDefault(key, List.of())) {
+						if (producer != consumer) {
+							dependencies.add(producer);
+						}
+					}
+				}
+			}
+			for (int producer : dependencies) {
+				after.get(producer).add(consumer);
+				indegree[consumer]++;
+			}
+		}
+		java.util.PriorityQueue<Integer> ready = new java.util.PriorityQueue<>();
+		for (int i = 0; i < size; i++) {
+			if (indegree[i] == 0) {
+				ready.add(i);
+			}
+		}
+		List<CraftStep> ordered = new ArrayList<>(size);
+		while (!ready.isEmpty()) {
+			int next = ready.poll();
+			ordered.add(steps.get(next));
+			for (int dependent : after.get(next)) {
+				if (--indegree[dependent] == 0) {
+					ready.add(dependent);
+				}
+			}
+		}
+		if (ordered.size() != size) {
+			// A cyclic plan cannot be ordered; leave it alone and let execution report the failure.
+			Nei.LOG.warn("[MaEMI] crafting plan has a dependency cycle; keeping planner order");
+			return steps;
+		}
+		return ordered;
 	}
 
 	private static long producedAmount(EmiRecipe recipe, EmiStack stack) {

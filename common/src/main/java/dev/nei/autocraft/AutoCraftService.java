@@ -55,6 +55,7 @@ public final class AutoCraftService {
 		if (client.player == null) {
 			return;
 		}
+		long startedAt = System.nanoTime();
 		List<dev.emi.emi.api.recipe.EmiRecipe> recipes = dev.nei.recipe.RecipeRegistry.recipesFor(target);
 		HandledScreen<?> screen = client.currentScreen instanceof HandledScreen<?> hs ? hs : null;
 		java.util.function.Predicate<dev.emi.emi.api.recipe.EmiRecipe> fillable =
@@ -72,6 +73,7 @@ public final class AutoCraftService {
 			return;
 		}
 		CraftPlan candidate = CraftPlanner.planAdditional(target, amount, fillable);
+		Nei.LOG.info("[MaEMI] autocraft planning took {} ms", (System.nanoTime() - startedAt) / 1_000_000);
 		Nei.LOG.info("[MaEMI] autocraft {} x{}: {} step(s), missing {}",
 			dev.nei.util.StackIO.key(target), amount, candidate.steps().size(), candidate.missing());
 		for (CraftStep planned : candidate.steps()) {
@@ -92,6 +94,9 @@ public final class AutoCraftService {
 			// Nothing to do; do not scold the player with "you already have enough".
 			Nei.LOG.info("[MaEMI] autocraft {}: already satisfied, no steps", dev.nei.util.StackIO.key(target));
 			return;
+		}
+		if (plan != null) {
+			returnCraftingItems();
 		}
 		plan = candidate;
 		stepIndex = 0;
@@ -135,21 +140,6 @@ public final class AutoCraftService {
 			Object handler = EmiRecipeFiller.getFirstValidHandler(step.recipe(), screen);
 			Nei.LOG.info("[MaEMI] step {} recipe {} x{} handler {}", stepIndex + 1, step.recipe().getId(), step.batches(),
 				handler == null ? "none" : handler.getClass().getSimpleName());
-			if (handler instanceof dev.emi.emi.api.EmiRecipeHandler rawHandler) {
-				try {
-					dev.emi.emi.api.recipe.EmiPlayerInventory inv = rawHandler.getInventory(screen);
-					dev.emi.emi.api.recipe.handler.EmiCraftContext ctx =
-						new dev.emi.emi.api.recipe.handler.EmiCraftContext(screen, inv,
-							EmiCraftContext.Type.CRAFTABLE, EmiCraftContext.Destination.INVENTORY, step.batches());
-					Nei.LOG.info("[MaEMI] step canCraft={} inventory={}", rawHandler.canCraft(step.recipe(), ctx),
-						inv.getCraftables() == null ? "?" : inv.getCraftables().size());
-					java.util.List<net.minecraft.item.ItemStack> stacks =
-						EmiRecipeFiller.getStacks(rawHandler, step.recipe(), screen, step.batches());
-					Nei.LOG.info("[MaEMI] step getStacks={}", stacks == null ? "null" : stacks);
-				} catch (Throwable t) {
-					Nei.LOG.warn("[MaEMI] step diagnostics failed", t);
-				}
-			}
 			crafted = EmiRecipeFiller.performFill(step.recipe(), screen, EmiCraftContext.Type.CRAFTABLE,
 				EmiCraftContext.Destination.INVENTORY, step.batches());
 		} catch (Throwable t) {
@@ -175,16 +165,50 @@ public final class AutoCraftService {
 	}
 
 	private static void finish() {
+		returnCraftingItems();
 		message(Text.translatable("nei.autocraft.done", plan.steps().size()));
 		plan = null;
 		failures = 0;
 	}
 
 	public static void cancel() {
+		returnCraftingItems();
 		plan = null;
 		stepIndex = 0;
 		delay = 0;
 		failures = 0;
+	}
+
+	/**
+	 * Moves everything the filler left behind (crafting grid, cursor) back to the player inventory,
+	 * so an autocraft no longer ends with a table full of leftovers.
+	 */
+	private static void returnCraftingItems() {
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (client.player == null || client.interactionManager == null
+				|| !(client.currentScreen instanceof HandledScreen<?> screen)) {
+			return;
+		}
+		net.minecraft.screen.ScreenHandler handler = screen.getScreenHandler();
+		net.minecraft.item.ItemStack cursor = handler.getCursorStack();
+		if (!cursor.isEmpty()) {
+			for (net.minecraft.screen.slot.Slot slot : handler.slots) {
+				if (slot.inventory == client.player.getInventory() && slot.getStack().isEmpty()) {
+					client.interactionManager.clickSlot(handler.syncId, slot.id, 0,
+						net.minecraft.screen.slot.SlotActionType.PICKUP, client.player);
+					break;
+				}
+			}
+		}
+		for (net.minecraft.screen.slot.Slot slot : handler.slots) {
+			if (slot instanceof net.minecraft.screen.slot.CraftingResultSlot
+					|| !(slot.inventory instanceof net.minecraft.inventory.CraftingInventory)
+					|| slot.getStack().isEmpty()) {
+				continue;
+			}
+			client.interactionManager.clickSlot(handler.syncId, slot.id, 0,
+				net.minecraft.screen.slot.SlotActionType.QUICK_MOVE, client.player);
+		}
 	}
 
 	/**
