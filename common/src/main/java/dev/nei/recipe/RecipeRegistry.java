@@ -2,7 +2,9 @@ package dev.nei.recipe;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import dev.emi.emi.api.EmiApi;
 import dev.emi.emi.api.EmiRegistry;
@@ -14,6 +16,8 @@ import dev.nei.Nei;
 import dev.nei.api.NeiPlugin;
 import dev.nei.api.NeiPlugins;
 import dev.nei.api.NeiRegistry;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 
 /**
  * NEI's view of EMI's recipe index. NEI used to own a handler registry; on 1.20.1 EMI is the index,
@@ -22,6 +26,10 @@ import dev.nei.api.NeiRegistry;
  */
 public final class RecipeRegistry {
 	private static boolean initialised;
+	// Fallback output index by item, for stacks whose NBT (tool stats, damage) does not match the
+	// recipe's output stack exactly. EMI's own map is NBT-sensitive for those items.
+	private static List<EmiRecipe> itemIndexSource;
+	private static Map<Item, List<EmiRecipe>> itemOutputIndex = Collections.emptyMap();
 
 	private RecipeRegistry() {
 	}
@@ -51,15 +59,49 @@ public final class RecipeRegistry {
 		}
 		try {
 			List<EmiRecipe> recipes = EmiApi.getRecipeManager().getRecipesByOutput(stack);
-			if (recipes == null) {
-				Nei.LOG.warn("[NEI] EMI returned a null recipe list for {}", stack);
+			if (recipes != null && !recipes.isEmpty()) {
+				return recipes;
+			}
+			ItemStack itemStack = stack.getItemStack();
+			if (itemStack == null || itemStack.isEmpty()) {
 				return Collections.emptyList();
 			}
-			return recipes;
+			List<EmiRecipe> byItem = itemOutputIndex().get(itemStack.getItem());
+			return byItem == null ? Collections.emptyList() : byItem;
 		} catch (Throwable t) {
 			Nei.LOG.warn("[NEI] recipe lookup failed for {}", stack, t);
 			return Collections.emptyList();
 		}
+	}
+
+	private static Map<Item, List<EmiRecipe>> itemOutputIndex() {
+		List<EmiRecipe> all = EmiApi.getRecipeManager().getRecipes();
+		if (all == itemIndexSource) {
+			return itemOutputIndex;
+		}
+		Map<Item, List<EmiRecipe>> index = new HashMap<>();
+		for (EmiRecipe recipe : all) {
+			if (recipe == null || recipe.getOutputs() == null) {
+				continue;
+			}
+			for (EmiStack output : recipe.getOutputs()) {
+				if (output == null || output.isEmpty()) {
+					continue;
+				}
+				ItemStack outputStack = output.getItemStack();
+				if (outputStack == null || outputStack.isEmpty()) {
+					continue;
+				}
+				index.computeIfAbsent(outputStack.getItem(), k -> new ArrayList<>()).add(recipe);
+			}
+		}
+		for (Map.Entry<Item, List<EmiRecipe>> entry : index.entrySet()) {
+			entry.setValue(List.copyOf(entry.getValue()));
+		}
+		itemIndexSource = all;
+		itemOutputIndex = index;
+		Nei.LOG.info("[NEI] built item-output recipe fallback ({} items, {} recipes)", index.size(), all.size());
+		return index;
 	}
 
 	public static List<EmiRecipe> usesFor(EmiStack stack) {

@@ -80,8 +80,15 @@ public final class CraftPlanner {
 		}
 		String key = stockKey(stack);
 		long have = state.stock.getOrDefault(key, 0L);
-		if (have >= needed) {
-			state.stock.put(key, have - needed);
+		// Tools (GT hammers, files, wire cutters...) are reused between steps: one copy satisfies
+		// any number of recipes and is never consumed by planning. The root target is exempt so
+		// "craft one more" still plans a real craft.
+		boolean reusable = depth > 0 && isReusableTool(stack);
+		long neededHere = reusable ? Math.min(needed, 1) : needed;
+		if (have >= neededHere) {
+			if (!reusable) {
+				state.stock.put(key, have - neededHere);
+			}
 			return true;
 		}
 		if (++state.attempts > MAX_ATTEMPTS || depth >= maxDepth
@@ -162,11 +169,13 @@ public final class CraftPlanner {
 			return false;
 		}
 		long total = add(state.stock.getOrDefault(key, 0L), produced);
-		if (total < needed) {
+		boolean reusable = depth > 0 && isReusableTool(stack);
+		long neededHere = reusable ? Math.min(needed, 1) : needed;
+		if (total < neededHere) {
 			state.missing.add(describe(stack));
 			return false;
 		}
-		state.stock.put(key, total - needed);
+		state.stock.put(key, total - (reusable ? 0 : neededHere));
 		state.steps.add(new CraftStep(recipe, (int) batches));
 		return true;
 	}
@@ -364,10 +373,27 @@ public final class CraftPlanner {
 		}
 	}
 
+	private static boolean sameItem(EmiStack a, EmiStack b) {
+		ItemStack left = a.getItemStack();
+		ItemStack right = b.getItemStack();
+		return left != null && right != null && !left.isEmpty() && !right.isEmpty()
+			&& left.getItem() == right.getItem();
+	}
+
+	private static boolean isReusableTool(EmiStack stack) {
+		ItemStack itemStack = stack.getItemStack();
+		return itemStack != null && !itemStack.isEmpty() && itemStack.isDamageable();
+	}
+
 	private static long producedAmount(EmiRecipe recipe, EmiStack stack) {
 		long amount = 0;
 		for (EmiStack output : recipe.getOutputs()) {
-			if (output == null || output.isEmpty() || !output.isEqual(stack)) {
+			if (output == null || output.isEmpty()) {
+				continue;
+			}
+			// EMI's comparison includes NBT, and GT tool outputs carry generated tool stats that
+			// the hovered item may spell slightly differently. Fall back to the item identity.
+			if (!output.isEqual(stack) && !sameItem(output, stack)) {
 				continue;
 			}
 			amount = add(amount, Math.max(1, output.getAmount()));
