@@ -8,8 +8,8 @@
 ## Upstream projects
 
 * **Not Enough Items** — originally by ChickenBones; 1.7.10 maintenance and the 2.8.44-GTNH code
-  this port studies by the GTNH team. MaEMI's behaviour, search language and panel layout are the
-  specification for this project. No MaEMI code is copied: the 1.7.10 sources are obsolete on 1.20.1.
+  this port studies by the GTNH team. MaEMI's autocrafting workflow and item-lookup behaviour are
+  the specification for this project. No MaEMI code is copied: the 1.7.10 sources are obsolete on 1.20.1.
 * **EMI** — emilyploszaj and contributors (https://github.com/emilyploszaj/emi). EMI is the host:
   recipe indexing, recipe screens, stack model and recipe filling. This mod is an addon and does not
   patch or redistribute EMI.

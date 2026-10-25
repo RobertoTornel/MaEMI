@@ -1,111 +1,97 @@
 # Architecture
 
-## Goals and constraints
+MaEMI is an Architectury multiloader project. EMI stays the recipe index and screen renderer; this
+mod only adds behaviour through public EMI APIs and a few additive client mixins.
 
-1. **Port MaEMI's functionality, not its 2013 plumbing.** MaEMI's 1.7.10 code depends on
-   `GuiContainerManager`, ASM transformers, Item IDs and a packet channel that simply do not exist
-   on 1.20.1. Everything is re-implemented against modern Minecraft and EMI.
-2. **EMI is the host, never a fork.** We depend on the published `dev.emi:emi-*:1.1.22+1.20.1`
-   artifact, register through `dev.emi.emi.api.*`, and keep the handful of mixins that reach into
-   EMI or vanilla internals in one place. No EMI source is copied or patched.
-3. **Multiloader by construction.** `common` holds every feature. `fabric` and `forge` only provide
-   the loader seam (entrypoint, key bindings, config screen registration). Common code never imports
-   a loader API.
-4. **Compatibility is discovered, not assumed.** Every integration is a `CompatModule` with a list
-   of required mod ids. A module whose mods are missing is disabled before it can load a class.
+## Modules
 
-## Module map (`common`)
-
-| Package | Responsibility |
+| Path | Responsibility |
 | --- | --- |
-| `dev.nei` | Mod bootstrap, client singleton, key bindings |
-| `dev.nei.platform` | The only loader-facing interface (`NeiPlatform`, `NeiKeybind`) |
-| `dev.nei.config` | JSON config, Cloth Config screen, fallback screen |
-| `dev.nei.search` | MaEMI's search language parser and filters (pure Java, unit tested) |
-| `dev.nei.panel` | Item panel rendering and input |
-| `dev.nei.item` | Item subsets |
-| `dev.nei.bookmark` | Bookmark groups |
-| `dev.nei.cheat` | Cheat and utility actions |
-| `dev.nei.api` | Public API for addons (recipe handlers, GUI handlers, filters) |
-| `dev.nei.recipe` | Recipe handler registry and vanilla handlers |
-| `dev.nei.autocraft` | Craft planning and execution |
-| `dev.nei.compat` | Auto-discovered mod compatibility modules |
-| `dev.nei.integration` | Glue to EMI internals that is too small for its own subsystem |
-| `dev.nei.tooltip` | Tooltip augmentation |
-| `dev.nei.dump` | Data dumps |
-| `dev.nei.hook` | Thin entry points called by mixins |
-| `dev.nei.mixin` | Additive client mixins |
+| `common` | Almost all logic: planner, EMI plugin, tool detection, recipe index, config, tooltips, dump |
+| `fabric` | Fabric entrypoints, key registration, Cloth Config/Mod Menu wiring, Fabric metadata |
+| `forge` | Forge entrypoints, key registration, Forge event wiring, `mods.toml` |
 
-## Loader seam
+`common` must not reference loader classes. Loader-specific code lives behind the small
+`dev.nei.platform` interfaces and is supplied at client init.
 
-`NeiPlatform` exposes exactly what differs between Fabric and Forge:
+## Startup
 
-- `isModLoaded` / `loaderName` / `isDevelopmentEnvironment`
-- `configDirectory`
-- `sendCommand` (chat commands used by utility buttons)
-- `openConfigScreen`
-- `registerKeybind` / `matchesKeybind` (the latter lets the panel react to keys while a GUI is open,
-  where vanilla key bindings do not fire)
+Both loaders call `NeiClient.init(platform)`, which loads `config/nei.json` and stores the platform
+adapter. EMI then calls `NeiEmiPlugin.register(EmiRegistry)` from its own entrypoint. Registration
+installs:
 
-Both platforms call `Nei.init(platform)` and `NeiClient.init(platform)` from their client-only
-initialiser. The Forge mod class checks `FMLEnvironment.dist == Dist.CLIENT` before touching any
-client class, so a dedicated server can load the jar without linking `Screen`.
+1. **Tool comparisons** — iterates the item registry and gives tools/damageable items an
+   NBT-insensitive default comparison. This is done before EMI builds its `byOutput` index, so
+   lookup on a used tool finds its recipe.
+2. **Recipe index helpers** — `RecipeRegistry` keeps the tool-output fallback index used only when
+   EMI has no exact output match for a tool.
+3. **Compatibility modules** — `NeiCompat` evaluates each module against loaded mods and skips
+   missing targets before class-loading module code.
+4. **Debris cleanup** — no custom panel is registered. The old panel classes remain in the source
+   tree for config compatibility but are not rendered and do not intercept input.
 
-## Mixins
+## Autocrafting pipeline
 
-Mixins are additive and confined to the client:
+```
+C key
+  -> HoveredStack.get()          cached EMI hover, then scaled cursor hover
+  -> AutoCraftService.requestCraft
+       -> RecipeRegistry.recipesFor(target)
+       -> canFillIn(recipe, currentScreen)
+       -> CraftPlanner.planAdditional(target, 1, allowed)
+       -> execution in AutoCraftService.tick()
+```
 
-- `HandledScreenMixin` — draws the panel after the container screen finished rendering and offers
-  it input first (new `?tid` methods; never cancels ordinary screen behaviour unless the panel
-  actually consumed the event).
-- `HandledScreenAccessor` — `x`, `y`, `backgroundWidth`, `backgroundHeight`, `handler`,
-  `focusedSlot`, needed to position the panel and to find the hovered slot.
-- `ScreenMixin` — optional (`showEverywhere`) rendering/input on non-container screens.
-- `KeyboardMixin` / `MouseMixin` — `Screen.charTyped` and `Screen.mouseScrolled` are interface
-  defaults, which Mixin cannot inject into on Forge. The hooks sit in `Keyboard#onChar` and
-  `Mouse#onMouseScroll` instead, so both loaders see panel typing and scrolling.
-- `ItemStackTooltipMixin` — appends mod/id/tag/NBT/spawner lines to item tooltips.
+### Screen filter
 
-No mixin targets EMI unless a feature genuinely cannot be reached through the API; when one does, it
-is documented here with the EMI version it was verified against.
+`canFillIn` is the contract with the current screen:
 
-## Input routing
+* `InventoryScreen` / `CraftingScreen`: only `minecraft:crafting` (or equivalent) categories, and
+  only recipes whose input count fits the 2x2/3x3 grid.
+* Other `HandledScreen`s: the recipe must have a valid `EmiRecipeHandler` for that screen. Machine
+  screens therefore accept their own recipes and nothing else.
 
-Vanilla key bindings do not fire while a screen is open. `NeiHooks.keyPressed` is called first by
-`HandledScreenMixin`; it gives the panel the event, then asks `NeiKeybinds.handleKeyPressed`, which
-compares the event against the loader registrations through `NeiPlatform.matchesKeybind`. When no
-screen is open, `NeiKeybinds.tick` drains the normal bindings instead. A press handled by the screen
-is still drained in `tick` so it cannot fire a second time when the player closes the GUI. Text typed
-into a focused search field is consumed by the panel before any action key is considered.
+The same predicate is passed into the planner and applied to **every** recursive step, not only
+the requested item. That is what prevents an extruder step being planned while a crafting table is
+open.
 
-## Feedback
+### Planner
 
-`dev.nei.util.Messages` writes to chat history and to `NeiPanelState.status`, and the panel draws that
-status line at the bottom of the screen. The HUD (including chat) is hidden behind container screens,
-so an action-bar message alone would be invisible exactly when autocrafting or subsets need to
-report something.
+`CraftPlanner` is a depth-first, backtracking planner over `EmiRecipe` objects.
 
-## Persistence
+* **Stock keys** identify what is actually owned. Non-tools use `StackIO.key`, which includes NBT
+  material data for GT items. Tools use `tool:<id>` and are never consumed by planning.
+* **Stock accounting** consumes inputs from a working map. Failed recipe branches are fully rolled
+  back (stock, steps and missing set) before the next candidate is tried.
+* **Tag inputs** are expanded to every `EmiStack` candidate. Candidates are scored once:
+  direct stock, then shallow craftability (all of one recipe's inputs are in stock), then any
+  recipe. Ties prefer the target's tool material, then quantity, then id.
+* **Tools** are recognised by `ToolIdentity` from damageability, `GT.Tool` NBT and GregTech tool
+  name suffixes. A tool requirement is reduced to one copy and reused at every depth.
+* **Batches** are computed from output amount. Recipes with a reusable tool input are emitted as
+  separate one-item steps, because EMI's filler would otherwise require multiple copies of the
+  tool.
+* **Ordering** — after planning, steps are topologically sorted by produced/consumed stock keys so
+  an ingredient is always made before the step that consumes it. Independent steps keep planner
+  order.
+* **Limits** — `MAX_STEPS`, `MAX_ATTEMPTS`, configured depth and cycle detection stop pathological
+  trees. Missing leaves are reported as the real missing item, not the requested item.
 
-| File | Contents |
-| --- | --- |
-| `config/nei.json` | all settings |
-| `config/nei-subsets.json` | item subsets |
-| `config/nei-bookmarks.json` | bookmark groups |
-| `config/nei-hidden.json` | hidden stacks |
+### Execution
 
-All files are written atomically (temporary file + move) and tolerate unknown/missing fields.
+`AutoCraftService.tick()` runs one step at a time with a short delay. Before filling it re-resolves
+the handler for the current screen and calls `EmiRecipeFiller.performFill` with the step's batch
+count. Failures are retried a bounded number of times; when the plan ends, fails or is cancelled,
+`returnCraftingItems()` shift-clicks crafting-grid slots and cursor contents back into the player
+inventory.
 
-## Threading
+## Tooltips and dump
 
-- Panel filtering is cached and recomputed only when the query, subset, sort or page source changes.
-- Dumps and icon extraction run on a single daemon worker; the render thread only reads finished
-  results.
-- Autocrafting executes on the client thread because it manipulates the open screen handler through
-  `ClientPlayerInteractionManager`; a plan is computed up-front so the work per tick is bounded.
+`ItemStackTooltipMixin` appends `TooltipLines` output. `DumpService` writes EMI's item and recipe
+lists to `config/nei-dump/` on a daemon thread, using a temp file and atomic move.
 
-## Testing
+## Constraints
 
-`common/src/test` contains pure-JVM tests (JUnit 5) for the search language, subset/bookmark
-persistence, the compatibility enable/disable matrix and the autocraft planner. None of them start
-Minecraft, which keeps CI fast.
+* EMI's source is never modified and no EMI internals are reimplemented.
+* No custom recipe index is authoritative: EMI's index is queried first, with a tool-only fallback.
+* Client-only. Dedicated servers must never load GUI or client classes.

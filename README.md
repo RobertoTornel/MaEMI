@@ -1,125 +1,167 @@
-# MaEMI for 1.20.1 — Not Enough Items, bolted onto EMI
+# MaEMI
 
-MaEMI (Not Enough Items) was the recipe viewer and item panel of 1.7.10 modpacks. It cannot be compiled
-for 1.20.1: it is built on `GuiContainerManager`, ASM transformers, numeric item IDs and a packet
-channel that all disappeared. This project ports **MaEMI's features and workflows** to Minecraft
-1.20.1 by building on [EMI](https://github.com/emilyploszaj/emi/) instead of replacing it: EMI keeps
-owning recipe indexing and its own panels, and MaEMI adds the parts EMI never had.
+MaEMI brings Not Enough Items-style crafting conveniences to **Minecraft 1.20.1**, on top of
+[EMI](https://github.com/emilyploszaj/emi/). It is not a replacement recipe browser: EMI still owns
+the item index, search, recipe screens and recipe book. MaEMI adds the parts EMI does not do on its
+own, in one jar per loader:
 
-The result is a single jar for **Fabric** and **Forge** (Architectury multiloader), and every
-compatibility module turns itself off when the mod it targets is not installed.
+* recursive **autocrafting** from the hovered item, using the player's inventory
+* **tool-aware recipe matching** for GregTech and vanilla tools, so a damaged or NBT-carrying tool
+  matches the plain tool a recipe asks for and is reused instead of remade
+* tag-aware planning that prefers ingredients you can actually make from what you have
+* extra tooltip lines for mod, item id, tags and NBT
+* a searchable data dump for bug reports
 
-## Features
-
-* **Item panel** next to the container GUI, on either side, with configurable columns and rows.
-  Item grid, search field with MaEMI's search language, subset tabs, page label, hover tooltips.
-* **MaEMI search syntax**: plain name search, quotes for literals, `|`, `-`, `!`, groups with
-  `{ }`, wildcards `*` and `?`, regular expressions `r/.../`, and the prefixes
-  `@mod` (mod name/id), `$tag` (item tag), `#tooltip` and `&identifier`.
-* **Item subsets**: `MaEMI` (everything), `Bookmarks`, and any number of user subsets created
-  from the panel (right-click a tab to add one; shift+right-click a user tab to rename or delete
-  it), stored in `config/nei-subsets.json`. Narrow panels shorten tab labels and show the full
-  name as a tooltip instead of hiding tabs.
-* **Bookmarks**: named groups plus a "recently looked at" history, in
-  `config/nei-bookmarks.json`. Right-click a panel item to bookmark it.
-* **Hidden items**: `H` hides the hovered item; the list lives in `config/nei-hidden.json`.
-* **Recipe and use lookup**: clicking a panel item with the middle mouse button opens its recipes;
-  `R` and `U` work on the stack under the panel cursor. EMI handles the actual recipe screens.
-* **Machine lookups ("?" button)**: opens the recipe category whose workstation is the held item,
-  or the block you are looking at, for any mod that registers workstations with EMI.
-* **Autocrafting**: `C` plans how to obtain the hovered item from what you carry, expands the
-  recipe tree (inputs first, cycle-safe), then runs the plan through EMI's own recipe filler. It
-  obeys the open screen's rules and stops with a clear message when a step cannot be performed.
-  Progress and errors are drawn at the bottom of the screen and copied to chat, so they are readable
-  while the GUI is open.
-* **Cheat/utility actions**: creative give (click), trash, heal, time, weather, gamemode, enchant,
-  spawn, each permission-checked. Right-click the "?" button to open the utility screen.
-* **Tooltip augmentation**: registry id, mod name, stack size, tags and (optional) NBT.
-* **Data dumps**: `F8` writes items, recipes and tags to `config/nei-dump/` for pack debugging.
-* **Cloth Config** screen (`P`, or ModMenu), with a plain fallback screen when Cloth Config is
-  absent.
-
-Missing on purpose: MaEMI's ghost-recipe overlay, transfer-rectangle arrows inside machine GUIs and
-its per-handler tab configuration. Those rely on MaEMI's own GUI framework; EMI performs crafting
-instead of previewing it. See [docs/PORTING.md](docs/PORTING.md).
+There is no custom item panel. MaEMI deliberately uses EMI's own index, so there is nothing to
+configure away and no second UI competing for the mouse or keyboard.
 
 ## Requirements
 
-| | Fabric | Forge |
-| --- | --- | --- |
-| Minecraft | 1.20.1 | 1.20.1 |
-| Loader | Fabric Loader 0.15+ | Forge 47+ |
-| EMI | 1.1.20+ | 1.1.20+ |
-| Cloth Config | optional, 11+ | optional, 11+ |
-| ModMenu | optional | — |
+| Loader | Requirements |
+| --- | --- |
+| Fabric | Minecraft 1.20.1, Fabric Loader 0.15+, Fabric API, EMI 1.1.20+ |
+| Forge | Minecraft 1.20.1, Forge 47+, EMI 1.1.20+ |
 
-Client only. The jars are in `fabric/build/libs` and `forge/build/libs`.
+Cloth Config 11+ is recommended for the settings screen. Mod Menu is optional on Fabric. MaEMI is
+client-side only; it does nothing on a dedicated server.
 
-Both jars are built against **EMI 1.1.22** (the version shipped by Monifactory) and accept EMI
-1.1.20 or newer. The Fabric and Forge dev clients were both run on EMI 1.1.22: MaEMI initialises,
-the EMI plugin registers, the panel renders next to the inventory, typing filters the grid, the
-mouse wheel pages it, and `O` both hides and restores the panel from inside a GUI. Forge
-47.2.0 shows zero mixin failures. Autocrafting execution is accepted by EMI's filler for recipes
-the open screen supports; see the limitations below before promising a full GregTech chain.
+## Installation
 
-## Default keys
+1. Install EMI (and Fabric API on Fabric) as usual.
+2. Download the jar for your loader from the [latest release](https://github.com/RobertoTornel/nei-fabric/releases/latest):
+   * `maemi-fabric-1.0.0.jar` for Fabric
+   * `maemi-forge-1.0.0.jar` for Forge
+3. Put exactly one of them in `mods/`. Do not install both loaders' jars in one instance.
+4. Launch the game. The first launch creates `config/nei.json`.
+
+## Autocrafting
+
+Hover an item in EMI (or in a container) and press **C**. MaEMI plans the craft and fills the
+supported slots for you.
+
+What the planner does:
+
+* **Crafts one more than you already have.** Pressing C on an item you own plans another copy
+  instead of silently doing nothing.
+* **Works backwards through the recipe tree.** Missing plates, sticks, screws and similar
+  intermediates are planned first, up to the configured depth.
+* **Uses your real inventory**, including the crafting grid and the stack on the cursor. It does
+  not invent items.
+* **Reuses tools.** A hammer, file, screwdriver, wire cutter, saw or other tool is required, not
+  consumed: one copy satisfies every step. GregTech tools are recognised even though their
+  durability lives in `GT.Tool` NBT rather than vanilla damage.
+* **Handles tag ingredients.** A recipe that accepts `#minecraft:planks` or `#forge:tools/hammers`
+  is matched against every member of the tag. Candidates already in stock, or whose recipe is
+  entirely satisfiable from stock, are tried before obscure modded variants.
+* **Splits tool recipes into single crafts.** EMI would otherwise ask for one tool per batch;
+  MaEMI plans those recipes one at a time so the same tool is reused.
+* **Returns leftovers.** When the plan finishes, fails or is cancelled, items left in the crafting
+  grid and on the cursor are moved back to the player inventory.
+* **Stops cleanly.** If something genuinely cannot be made, the chat message names only the real
+  missing ingredient, not the item you asked for.
+
+### Which screens work
+
+The recipe must be fillable in the screen that is open:
+
+* vanilla crafting table, player inventory and crafting-station screens accept crafting recipes
+  that fit their grid
+* a machine screen accepts the recipes its own EMI recipe handler can fill; open the machine and
+  press C there
+* EMI's recipe browser is not a crafting screen, so C there reports that the current screen is
+  wrong instead of pretending to craft
+
+Only recipes that can run in the current screen are used, including for every intermediate step.
+
+## Tool-aware recipe matching
+
+EMI normally compares item NBT. GregTech tools carry generated stats and damage in NBT, so an
+inventory hammer does not equal the plain hammer a recipe shows. MaEMI registers an NBT-insensitive
+comparison for tools and damageable items and recognises GregTech tool ids, which makes:
+
+* recipe lookup on a used tool work
+* the tool match its recipe ingredient
+* tool outputs match the hovered tool
+* one tool satisfy a plan that needs it repeatedly
+
+This is generic: it is driven by item identity, damageability, `GT.Tool` NBT and tool name
+patterns. No pack-specific item list is involved.
+
+## Tooltips
+
+With tooltips enabled, item tooltips gain configurable lines:
+
+* mod display name
+* registry id (`namespace:path`)
+* stack count and maximum stack size
+* item tags
+* NBT keys and values (truncated for readability)
+
+Tags and NBT are off by default because they are noisy in large packs.
+
+## Keys
 
 | Key | Action |
 | --- | --- |
-| `O` | show/hide the item panel |
-| `B` | switch to the bookmarks view |
-| `C` | autocraft the hovered item |
-| `P` | open the settings |
-| `H` | hide the hovered item |
-| `F8` | dump items/recipes/tags |
+| **C** | Autocraft the hovered item |
+| **P** | Open MaEMI settings |
+| **F8** | Dump EMI's item and recipe index to `config/nei-dump/` |
 
-All bindings are in `Options → Controls → Not Enough Items`. They also work while a container GUI
-is open (vanilla key bindings do not), and are suppressed while the panel search field has focus.
+The retired panel, bookmark, subset and cheat keys are not registered, so they do not take keys
+away from EMI or other mods.
+
+## Configuration
+
+Open the settings with **P**, or from Mod Menu on Fabric. The file is `config/nei.json`.
+
+Useful sections:
+
+* **Autocraft** — planning depth and related options.
+* **Tooltip** — enable/disable the extra lines, mod name, registry name, tags, NBT and stack count.
+* **General** — master toggle and compatibility logging.
+
+The old panel/search/cheat sections are kept so existing config files keep loading; they no longer
+drive any UI in this build.
+
+## Data dump
+
+Press **F8** to write text dumps of EMI's index to `config/nei-dump/`. The dump runs on a
+background thread and is written atomically. It is intended for bug reports: it shows exactly which
+items, tags and recipes the game sees.
 
 ## Compatibility
 
-EMI already unifies recipe display for most 1.20.1 mods, so MaEMI's compatibility layer focuses on
-things EMI leaves to the pack: namespace-only item subsets for large mods (GregTech, AE2, Create,
-Mekanism, Thermal, Immersive Engineering, Botania, Ars Nouveau, Tinkers', Farmer's Delight, Modern
-Industrialization, Powah, Ad Astra) and data-driven tooltips. A module whose required mod is missing
-is skipped before its classes are touched, and the reason is logged. See
-[docs/COMPAT.md](docs/COMPAT.md).
+MaEMI reads what is installed and disables compatibility modules whose target mods are absent. It
+does not require GregTech: the tool handling is generic, and packs without GT simply do not exercise
+the GT paths. It is designed to sit alongside other EMI addons rather than replace them.
 
-## Known limitations
+## Limitations
 
-* **Autocrafting runs through EMI's recipe handlers.** It can fill any screen EMI can fill (player
-  crafting grid, crafting table, and machines whose mod ships an EMI handler). GregTech machines and
-  other blocks without a fillable handler are planned but cannot be executed automatically; the
-  service reports the step it cannot perform instead of dropping items on the floor.
-* **Ghost recipe preview** on the crafting grid is not implemented. EMI's recipe screen and its own
-  craft button cover the workflow; MaEMI's overlay rendered the recipe in-place.
-* **The panel is built for container screens.** `showEverywhere` extends it to screens that call
-  `super.render`, but screens that draw over it can cover the panel, and only screens that call
-  `super` for input receive clicks.
-* Compatibility subsets are namespace-based, matching MaEMI's per-mod item list rather than its
-  hand-written handler blacklists.
+* MaEMI cannot craft a recipe in a screen that cannot fill it. Machine recipes need the machine's
+  own screen; EMI's recipe browser is read-only.
+* Planning is bounded by the configured depth and internal step limit, so extremely deep or cyclic
+  recipe chains stop with a message instead of looping forever.
+* The custom NEI panel from 1.7.10 is intentionally not reproduced; EMI's index is the item panel.
 
-## Building
+## Building from source
 
 ```bash
-./gradlew build          # both loaders
-./gradlew :fabric:build  # one loader
-./gradlew :common:test   # pure-JVM tests
+git clone https://github.com/RobertoTornel/nei-fabric.git
+cd nei-fabric
+./gradlew build
 ```
 
-Java 17 is required to run the game; the build itself is verified with JDK 17 and 21.
+The jars are written to:
 
-## Layout
+* `fabric/build/libs/maemi-fabric-1.0.0.jar`
+* `forge/build/libs/maemi-forge-1.0.0.jar`
 
-```
-common/   every feature, no loader imports
-fabric/   Fabric entrypoint, key bindings, ModMenu integration
-forge/    Forge mod class, key mappings, config screen factory
-docs/     architecture, feature map, porting notes, compatibility
-```
+A Java 21 JDK is recommended; the build targets Java 17 bytecode.
 
-## Licence and credits
+## Docs and licence
 
-LGPL-3.0-or-later. MaEMI was written by ChickenBones and maintained by the GTNH team; this port is an
-independent re-implementation of its behaviour on top of EMI by emilyploszaj and contributors. See
-[docs/CREDITS.md](docs/CREDITS.md).
+* [Architecture and internals](docs/ARCHITECTURE.md)
+* [Credits and third-party notices](docs/CREDITS.md)
+
+MaEMI is licensed under **LGPL-3.0-or-later**. EMI remains a separate project under its own
+licence; MaEMI does not modify EMI's code.
