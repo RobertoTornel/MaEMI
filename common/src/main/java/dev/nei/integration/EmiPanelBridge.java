@@ -24,23 +24,9 @@ public final class EmiPanelBridge {
 	}
 
 	public static void sync() {
-		// The custom panel is retired, so EMI's index must never be hidden or replaced.
+		// The custom panel is retired, so EMI's index must never be hidden or replaced. If an
+		// older build removed it, put it back now.
 		if (indexRemoved) {
-			restoreIndex();
-		}
-		if (true) {
-			return;
-		}
-		NeiConfigData config = NeiConfig.get();
-		boolean replace = config.general.enabled && config.panel.enabled && config.panel.replaceEmiIndex;
-		if (replace) {
-			if (!indexRemoved) {
-				removeIndex(config.panel.side);
-			} else if (sideWithRemovedIndex != config.panel.side) {
-				restoreIndex();
-				removeIndex(config.panel.side);
-			}
-		} else if (indexRemoved) {
 			restoreIndex();
 		}
 	}

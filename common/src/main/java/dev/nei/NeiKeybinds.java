@@ -23,11 +23,13 @@ import org.lwjgl.glfw.GLFW;
  */
 public final class NeiKeybinds {
 	public enum Action {
-		TOGGLE_PANEL("key.nei.toggle_panel", GLFW.GLFW_KEY_O),
-		TOGGLE_BOOKMARKS("key.nei.toggle_bookmarks", GLFW.GLFW_KEY_B),
-		AUTOCRAFT("key.nei.autocraft", GLFW.GLFW_KEY_C),
+		// The panel/bookmark/hide features are retired and autocrafting is opt-in, so these
+		// bindings are unbound by default. O, B, C and H belong to EMI again.
+		TOGGLE_PANEL("key.nei.toggle_panel", GLFW.GLFW_KEY_UNKNOWN),
+		TOGGLE_BOOKMARKS("key.nei.toggle_bookmarks", GLFW.GLFW_KEY_UNKNOWN),
+		AUTOCRAFT("key.nei.autocraft", GLFW.GLFW_KEY_UNKNOWN),
 		OPEN_CONFIG("key.nei.open_config", GLFW.GLFW_KEY_P),
-		HIDE_ITEM("key.nei.hide_item", GLFW.GLFW_KEY_H),
+		HIDE_ITEM("key.nei.hide_item", GLFW.GLFW_KEY_UNKNOWN),
 		TOGGLE_CHEAT("key.nei.toggle_cheat", GLFW.GLFW_KEY_UNKNOWN),
 		DUMP("key.nei.dump", GLFW.GLFW_KEY_F8);
 
