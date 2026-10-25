@@ -41,6 +41,7 @@ public final class AutoCraftService {
 			return;
 		}
 		EmiStack hovered = HoveredStack.get();
+		Nei.LOG.info("[NEI] autocraft key: hovered={}", hovered.isEmpty() ? "none" : dev.nei.util.StackIO.key(hovered));
 		if (hovered.isEmpty()) {
 			message(Text.translatable("nei.autocraft.nothing"));
 			return;

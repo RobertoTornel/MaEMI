@@ -27,7 +27,7 @@ public final class NeiKeybinds {
 		// bindings are unbound by default. O, B, C and H belong to EMI again.
 		TOGGLE_PANEL("key.nei.toggle_panel", GLFW.GLFW_KEY_UNKNOWN),
 		TOGGLE_BOOKMARKS("key.nei.toggle_bookmarks", GLFW.GLFW_KEY_UNKNOWN),
-		AUTOCRAFT("key.nei.autocraft", GLFW.GLFW_KEY_UNKNOWN),
+		AUTOCRAFT("key.nei.autocraft", GLFW.GLFW_KEY_C),
 		OPEN_CONFIG("key.nei.open_config", GLFW.GLFW_KEY_P),
 		HIDE_ITEM("key.nei.hide_item", GLFW.GLFW_KEY_UNKNOWN),
 		TOGGLE_CHEAT("key.nei.toggle_cheat", GLFW.GLFW_KEY_UNKNOWN),
@@ -49,9 +49,12 @@ public final class NeiKeybinds {
 
 	public static void registerAll(NeiPlatform platform) {
 		for (Action action : Action.values()) {
-			if (action.defaultKey == GLFW.GLFW_KEY_UNKNOWN) {
+			// Retired panel features are not registered at all, so they cannot steal keys.
+			if (action == Action.TOGGLE_PANEL || action == Action.TOGGLE_BOOKMARKS || action == Action.HIDE_ITEM) {
 				continue;
 			}
+			// Register even unbound actions: vanilla then shows them in Controls so the player can
+			// assign a key. Skipping them is why Autocraft did not appear there.
 			BINDS.put(action, platform.registerKeybind(action.translationKey, action.defaultKey));
 		}
 	}

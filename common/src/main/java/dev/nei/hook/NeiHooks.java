@@ -33,8 +33,12 @@ public final class NeiHooks {
 	}
 
 	public static boolean keyPressed(Screen screen, int keyCode, int scanCode, int modifiers) {
-		// Settings/dump stay reachable from a container GUI; EMI's own keys are never intercepted.
+		// Settings/dump/autocraft stay reachable from a container GUI; EMI's own keys are never
+		// intercepted. Typing into any text field (EMI search, rename box, anvil) always wins.
 		if (!(screen instanceof HandledScreen<?>)) {
+			return false;
+		}
+		if (screen.getFocused() instanceof net.minecraft.client.gui.widget.TextFieldWidget) {
 			return false;
 		}
 		return NeiKeybinds.handleKeyPressed(keyCode, scanCode, modifiers);

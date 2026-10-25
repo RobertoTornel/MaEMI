@@ -137,6 +137,12 @@
 	"nei.config.tooltip.nbt": "Show NBT data",
 	"nei.utility.title": "NEI Utilities",
 	"key.nei.dump": "Dump NEI data",
+	"key.nei.autocraft": "Autocraft hovered item",
+	"key.nei.open_config": "Open NEI settings",
+	"key.nei.toggle_panel": "Toggle NEI panel (retired)",
+	"key.nei.toggle_bookmarks": "Toggle NEI bookmarks (retired)",
+	"key.nei.hide_item": "Hide NEI item (retired)",
+	"key.nei.toggle_cheat": "Toggle NEI cheat mode",
 	"category.nei": "Not Enough Items",
 	"nei.panel.subset_created": "EMI: created subset %s (right-click a tab again to add more)."
 }

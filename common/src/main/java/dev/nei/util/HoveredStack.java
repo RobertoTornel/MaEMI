@@ -16,14 +16,25 @@ public final class HoveredStack {
 		}
 		// EMI first: its index, favorites, search results and container slots are the authority.
 		try {
-			var interaction = EmiApi.getHoveredStack(true);
+			// Use the current cursor position rather than EMI's cached last-move position, which is
+			// stale right after a screen opens and made C miss the hovered favorite.
+			var interaction = EmiApi.getHoveredStack(
+					(int) client.mouse.getX(), (int) client.mouse.getY(), true);
 			if (interaction != null) {
 				var ingredient = interaction.getStack();
-				if (ingredient instanceof EmiStack stack) {
-					if (!stack.isEmpty()) {
-						return stack;
+				if (ingredient != null && ingredient instanceof EmiStack stack && !stack.isEmpty()) {
+					return stack;
+				}
+				if (ingredient != null) {
+					// A favorite of a recipe should craft that recipe's result, not its input.
+					var context = EmiApi.getRecipeContext(ingredient);
+					if (context != null && context.getOutputs() != null) {
+						for (EmiStack output : context.getOutputs()) {
+							if (output != null && !output.isEmpty()) {
+								return output;
+							}
+						}
 					}
-				} else if (ingredient != null) {
 					// Favorites and other wrappers are EmiIngredients, not EmiStacks; unwrap them
 					// so pressing C over EMI's favorites sidebar behaves like hovering the item.
 					for (EmiStack stack : ingredient.getEmiStacks()) {
