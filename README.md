@@ -47,7 +47,7 @@ supported slots for you.
 | **Ctrl + Shift + C** | as many as the current stock allows |
 
 The amount is chosen from the modifiers held when C is pressed, so it works the same in vanilla
-containers, recipe screens and AE2 terminals.
+containers, recipe screens and AE2 crafting terminals.
 
 What the planner does:
 
