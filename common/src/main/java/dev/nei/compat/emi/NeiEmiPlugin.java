@@ -23,7 +23,11 @@ public class NeiEmiPlugin implements EmiPlugin {
 	@Override
 	public void register(EmiRegistry registry) {
 		Nei.LOG.info("[MaEMI] EMI registration started");
-		installToolComparisons(registry);
+		try {
+			installToolComparisons(registry);
+		} catch (Throwable t) {
+			Nei.LOG.warn("[MaEMI] could not install tool comparisons", t);
+		}
 		try {
 			RecipeRegistry.init(registry);
 		} catch (Throwable t) {
