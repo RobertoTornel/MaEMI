@@ -16,8 +16,8 @@ import dev.nei.Nei;
 import dev.nei.api.NeiPlugin;
 import dev.nei.api.NeiPlugins;
 import dev.nei.api.NeiRegistry;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import dev.nei.util.ToolIdentity;
+import net.minecraft.util.Identifier;
 
 /**
  * NEI's view of EMI's recipe index. NEI used to own a handler registry; on 1.20.1 EMI is the index,
@@ -26,12 +26,42 @@ import net.minecraft.item.ItemStack;
  */
 public final class RecipeRegistry {
 	private static boolean initialised;
-	// Fallback output index by item, for stacks whose NBT (tool stats, damage) does not match the
-	// recipe's output stack exactly. EMI's own map is NBT-sensitive for those items.
-	private static List<EmiRecipe> itemIndexSource;
-	private static Map<Item, List<EmiRecipe>> itemOutputIndex = Collections.emptyMap();
+	// GT tools carry tool NBT, so EMI's NBT-sensitive output lookup misses their crafting recipes.
+	// This index is limited to tool outputs and keyed by item id, so material variants of plates
+	// and ingots can never bleed into each other.
+	private static List<EmiRecipe> toolIndexSource;
+	private static Map<Identifier, List<EmiRecipe>> toolOutputIndex = Collections.emptyMap();
 
 	private RecipeRegistry() {
+	}
+
+	private static Map<Identifier, List<EmiRecipe>> toolOutputIndex() {
+		List<EmiRecipe> all = EmiApi.getRecipeManager().getRecipes();
+		if (all == toolIndexSource) {
+			return toolOutputIndex;
+		}
+		Map<Identifier, List<EmiRecipe>> index = new HashMap<>();
+		for (EmiRecipe recipe : all) {
+			if (recipe == null || recipe.getOutputs() == null) {
+				continue;
+			}
+			for (EmiStack output : recipe.getOutputs()) {
+				if (output == null || output.isEmpty() || !ToolIdentity.isTool(output)) {
+					continue;
+				}
+				Identifier id = output.getId();
+				if (id != null) {
+					index.computeIfAbsent(id, k -> new ArrayList<>()).add(recipe);
+				}
+			}
+		}
+		for (Map.Entry<Identifier, List<EmiRecipe>> entry : index.entrySet()) {
+			entry.setValue(List.copyOf(entry.getValue()));
+		}
+		toolIndexSource = all;
+		toolOutputIndex = index;
+		Nei.LOG.info("[NEI] built tool-output recipe index ({} tool items)", index.size());
+		return index;
 	}
 
 	public static void init(EmiRegistry registry) {
@@ -59,50 +89,22 @@ public final class RecipeRegistry {
 		}
 		try {
 			List<EmiRecipe> recipes = EmiApi.getRecipeManager().getRecipesByOutput(stack);
-			if (recipes != null && !recipes.isEmpty()) {
-				return recipes;
-			}
-			ItemStack itemStack = stack.getItemStack();
-			if (itemStack == null || itemStack.isEmpty()) {
+			if (recipes == null) {
+				Nei.LOG.warn("[NEI] EMI returned a null recipe list for {}", stack);
 				return Collections.emptyList();
 			}
-			List<EmiRecipe> byItem = itemOutputIndex().get(itemStack.getItem());
-			return byItem == null ? Collections.emptyList() : byItem;
+			if (!recipes.isEmpty() || !ToolIdentity.isTool(stack)) {
+				return recipes;
+			}
+			Identifier id = stack.getId();
+			return id == null ? Collections.emptyList()
+				: toolOutputIndex().getOrDefault(id, Collections.emptyList());
 		} catch (Throwable t) {
 			Nei.LOG.warn("[NEI] recipe lookup failed for {}", stack, t);
 			return Collections.emptyList();
 		}
 	}
 
-	private static Map<Item, List<EmiRecipe>> itemOutputIndex() {
-		List<EmiRecipe> all = EmiApi.getRecipeManager().getRecipes();
-		if (all == itemIndexSource) {
-			return itemOutputIndex;
-		}
-		Map<Item, List<EmiRecipe>> index = new HashMap<>();
-		for (EmiRecipe recipe : all) {
-			if (recipe == null || recipe.getOutputs() == null) {
-				continue;
-			}
-			for (EmiStack output : recipe.getOutputs()) {
-				if (output == null || output.isEmpty()) {
-					continue;
-				}
-				ItemStack outputStack = output.getItemStack();
-				if (outputStack == null || outputStack.isEmpty()) {
-					continue;
-				}
-				index.computeIfAbsent(outputStack.getItem(), k -> new ArrayList<>()).add(recipe);
-			}
-		}
-		for (Map.Entry<Item, List<EmiRecipe>> entry : index.entrySet()) {
-			entry.setValue(List.copyOf(entry.getValue()));
-		}
-		itemIndexSource = all;
-		itemOutputIndex = index;
-		Nei.LOG.info("[NEI] built item-output recipe fallback ({} items, {} recipes)", index.size(), all.size());
-		return index;
-	}
 
 	public static List<EmiRecipe> usesFor(EmiStack stack) {
 		if (stack == null || stack.isEmpty()) {

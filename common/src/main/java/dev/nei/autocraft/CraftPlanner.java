@@ -12,6 +12,8 @@ import java.util.function.Predicate;
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
+import dev.nei.Nei;
+import dev.nei.util.ToolIdentity;
 import dev.nei.config.NeiConfig;
 import dev.nei.recipe.RecipeRegistry;
 import dev.nei.util.StackIO;
@@ -211,11 +213,32 @@ public final class CraftPlanner {
 
 	private static List<RecipeOption> recipesFor(EmiStack stack, long needed, State state, Set<String> path) {
 		List<RecipeOption> options = new ArrayList<>();
-		for (EmiRecipe recipe : RecipeRegistry.recipesFor(stack)) {
+		List<EmiRecipe> candidates = RecipeRegistry.recipesFor(stack);
+		for (EmiRecipe recipe : candidates) {
 			if (recipe == null || producedAmount(recipe, stack) <= 0) {
 				continue;
 			}
+			// Every step has to run in the screen that is open right now, not just the target.
+			if (!state.allowed.test(recipe)) {
+				continue;
+			}
+			// Recycling recipes (grindstone disenchanting, repair) take the item itself as input
+			// and give it back. They neither add a copy nor run in a normal crafting screen, so
+			// they must never be how "craft one more" is satisfied.
+			if (consumesTarget(recipe, stack)) {
+				continue;
+			}
 			options.add(estimate(recipe, stack, needed, state, path));
+		}
+		if (options.isEmpty() && !candidates.isEmpty()) {
+			Nei.LOG.info("[NEI] no usable recipe for {} among {} candidate(s)", stockKey(stack), candidates.size());
+			int shown = 0;
+			for (EmiRecipe recipe : candidates) {
+				if (recipe == null || shown++ >= 4) {
+					continue;
+				}
+				Nei.LOG.info("[NEI]   {} produced={} outputs={}", recipe.getId(), producedAmount(recipe, stack), recipe.getOutputs());
+			}
 		}
 		// Deterministic order: recipes that can be resolved first, then those needing the fewest
 		// items not already in stock, then vanilla crafting and finally recipe identity.
@@ -277,11 +300,16 @@ public final class CraftPlanner {
 	private static boolean available(EmiIngredient input, long required, State state) {
 		for (EmiStack candidate : input.getEmiStacks()) {
 			if (candidate != null && !candidate.isEmpty()
-					&& state.stock.getOrDefault(stockKey(candidate), 0L) >= required) {
+					&& state.stock.getOrDefault(stockKey(candidate), 0L) >= needFor(candidate, required)) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	/** Tools are required, not spent: one copy satisfies any required amount. */
+	private static long needFor(EmiStack stack, long required) {
+		return isReusableTool(stack) ? Math.min(required, 1) : required;
 	}
 
 	private static boolean canSatisfy(EmiIngredient input, long required, State state, Set<String> path) {
@@ -290,7 +318,7 @@ public final class CraftPlanner {
 				continue;
 			}
 			String key = stockKey(candidate);
-			if (state.stock.getOrDefault(key, 0L) >= required) {
+			if (state.stock.getOrDefault(key, 0L) >= needFor(candidate, required)) {
 				return true;
 			}
 			if (!path.contains(key) && hasRecipe(candidate, state)) {
@@ -328,7 +356,7 @@ public final class CraftPlanner {
 	private static int optionTier(EmiStack stack, long needed, State state, Set<String> path) {
 		String key = stockKey(stack);
 		long have = state.stock.getOrDefault(key, 0L);
-		if (have >= needed) {
+		if (have >= needFor(stack, needed)) {
 			return 3;
 		}
 		if (!path.contains(key) && hasRecipe(stack, state)) {
@@ -354,10 +382,34 @@ public final class CraftPlanner {
 		return craftable;
 	}
 
-	private static boolean isVanillaCrafting(EmiRecipe recipe) {
+	private static boolean consumesTarget(EmiRecipe recipe, EmiStack target) {
+		ItemStack targetStack = target.getItemStack();
+		if (targetStack == null || targetStack.isEmpty()) {
+			return false;
+		}
+		if (!isReusableTool(target)) {
+			return false;
+		}
+		for (EmiIngredient input : recipe.getInputs()) {
+			if (input == null || input.isEmpty()) {
+				continue;
+			}
+			for (EmiStack candidate : input.getEmiStacks()) {
+				if (candidate != null && sameItem(candidate, target)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public static boolean isVanillaCrafting(EmiRecipe recipe) {
 		try {
-			return recipe.getCategory() != null && recipe.getCategory().getId() != null
-				&& "minecraft:crafting".equals(recipe.getCategory().getId().toString());
+			if (recipe.getCategory() == null || recipe.getCategory().getId() == null) {
+				return false;
+			}
+			String id = recipe.getCategory().getId().toString();
+			return "minecraft:crafting".equals(id) || id.endsWith(":crafting") || id.endsWith("/crafting");
 		} catch (Throwable t) {
 			return false;
 		}
@@ -381,8 +433,7 @@ public final class CraftPlanner {
 	}
 
 	private static boolean isReusableTool(EmiStack stack) {
-		ItemStack itemStack = stack.getItemStack();
-		return itemStack != null && !itemStack.isEmpty() && itemStack.isDamageable();
+		return ToolIdentity.isTool(stack);
 	}
 
 	private static long producedAmount(EmiRecipe recipe, EmiStack stack) {
@@ -393,7 +444,7 @@ public final class CraftPlanner {
 			}
 			// EMI's comparison includes NBT, and GT tool outputs carry generated tool stats that
 			// the hovered item may spell slightly differently. Fall back to the item identity.
-			if (!output.isEqual(stack) && !sameItem(output, stack)) {
+			if (!output.isEqual(stack) && !(isReusableTool(stack) && sameItem(output, stack))) {
 				continue;
 			}
 			amount = add(amount, Math.max(1, output.getAmount()));
@@ -410,8 +461,14 @@ public final class CraftPlanner {
 		if (stack == null || stack.isEmpty()) {
 			return "";
 		}
-		Object key = stack.getKey();
-		return key == null ? StackIO.key(stack) : key.toString();
+		// Tools are interchangeable regardless of damage/enchantments, so one key per tool item.
+		// Everything else (GT plates, ingots, ...) carries its material in NBT and must keep it,
+		// or an aluminium plate would count as a wrought iron plate.
+		if (isReusableTool(stack)) {
+			Identifier id = stack.getId();
+			return "tool:" + (id == null ? "" : id);
+		}
+		return StackIO.key(stack);
 	}
 
 	private static Map<String, Long> countInventory() {
@@ -429,6 +486,16 @@ public final class CraftPlanner {
 		}
 		for (ItemStack stack : inventory.offHand) {
 			add(counts, stack);
+		}
+		if (client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?> screen) {
+			for (net.minecraft.screen.slot.Slot slot : screen.getScreenHandler().slots) {
+				if (slot instanceof net.minecraft.screen.slot.CraftingResultSlot
+						|| !(slot.inventory instanceof net.minecraft.inventory.CraftingInventory)) {
+					continue;
+				}
+				add(counts, slot.getStack());
+			}
+			add(counts, screen.getScreenHandler().getCursorStack());
 		}
 		return counts;
 	}

@@ -57,7 +57,7 @@ public final class AutoCraftService {
 		List<dev.emi.emi.api.recipe.EmiRecipe> recipes = dev.nei.recipe.RecipeRegistry.recipesFor(target);
 		HandledScreen<?> screen = client.currentScreen instanceof HandledScreen<?> hs ? hs : null;
 		java.util.function.Predicate<dev.emi.emi.api.recipe.EmiRecipe> fillable =
-			recipe -> screen != null && EmiRecipeFiller.getFirstValidHandler(recipe, screen) != null;
+			recipe -> screen != null && canFillIn(recipe, screen);
 		Nei.LOG.info("[NEI] autocraft lookup {}: {} EMI recipe(s), {} usable in {}",
 			dev.nei.util.StackIO.key(target), recipes.size(),
 			recipes.stream().filter(fillable).count(),
@@ -69,6 +69,9 @@ public final class AutoCraftService {
 		CraftPlan candidate = CraftPlanner.planAdditional(target, amount, fillable);
 		Nei.LOG.info("[NEI] autocraft {} x{}: {} step(s), missing {}",
 			dev.nei.util.StackIO.key(target), amount, candidate.steps().size(), candidate.missing());
+		for (CraftStep planned : candidate.steps()) {
+			Nei.LOG.info("[NEI] plan step {} x{}", planned.recipe().getId(), planned.batches());
+		}
 		if (!candidate.missing().isEmpty()) {
 			message(Text.translatable("nei.autocraft.missing", String.join(", ", candidate.missing())));
 			return;
@@ -117,6 +120,24 @@ public final class AutoCraftService {
 		}
 		boolean crafted = false;
 		try {
+			Object handler = EmiRecipeFiller.getFirstValidHandler(step.recipe(), screen);
+			Nei.LOG.info("[NEI] step {} recipe {} x{} handler {}", stepIndex + 1, step.recipe().getId(), step.batches(),
+				handler == null ? "none" : handler.getClass().getSimpleName());
+			if (handler instanceof dev.emi.emi.api.EmiRecipeHandler rawHandler) {
+				try {
+					dev.emi.emi.api.recipe.EmiPlayerInventory inv = rawHandler.getInventory(screen);
+					dev.emi.emi.api.recipe.handler.EmiCraftContext ctx =
+						new dev.emi.emi.api.recipe.handler.EmiCraftContext(screen, inv,
+							EmiCraftContext.Type.CRAFTABLE, EmiCraftContext.Destination.INVENTORY, step.batches());
+					Nei.LOG.info("[NEI] step canCraft={} inventory={}", rawHandler.canCraft(step.recipe(), ctx),
+						inv.getCraftables() == null ? "?" : inv.getCraftables().size());
+					java.util.List<net.minecraft.item.ItemStack> stacks =
+						EmiRecipeFiller.getStacks(rawHandler, step.recipe(), screen, step.batches());
+					Nei.LOG.info("[NEI] step getStacks={}", stacks == null ? "null" : stacks);
+				} catch (Throwable t) {
+					Nei.LOG.warn("[NEI] step diagnostics failed", t);
+				}
+			}
 			crafted = EmiRecipeFiller.performFill(step.recipe(), screen, EmiCraftContext.Type.CRAFTABLE,
 				EmiCraftContext.Destination.INVENTORY, step.batches());
 		} catch (Throwable t) {
@@ -152,6 +173,25 @@ public final class AutoCraftService {
 		stepIndex = 0;
 		delay = 0;
 		failures = 0;
+	}
+
+	/**
+	 * A generic inventory/crafting-table screen must only receive vanilla crafting recipes, and
+	 * only as many inputs as it has slots. EMI's fallback handler otherwise claims recipes like
+	 * grindstone disenchanting, which then cannot actually be filled.
+	 */
+	private static boolean canFillIn(dev.emi.emi.api.recipe.EmiRecipe recipe, HandledScreen<?> screen) {
+		if (screen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen
+				|| screen instanceof net.minecraft.client.gui.screen.ingame.CraftingScreen) {
+			if (!CraftPlanner.isVanillaCrafting(recipe)) {
+				return false;
+			}
+			int slots = screen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen ? 4 : 9;
+			if (recipe.getInputs().size() > slots) {
+				return false;
+			}
+		}
+		return EmiRecipeFiller.getFirstValidHandler(recipe, screen) != null;
 	}
 
 	public static boolean isCrafting() {
