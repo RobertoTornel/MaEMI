@@ -186,18 +186,20 @@ public final class CraftPlanner {
 		// Deterministic order: recipes that can be resolved first, then those needing the fewest
 		// items not already in stock, then vanilla crafting and finally recipe identity.
 		options.sort((a, b) -> {
-			int byUnreachable = Integer.compare(a.unreachable(), b.unreachable());
-			if (byUnreachable != 0) {
-				return byUnreachable;
-			}
 			int byMissing = Integer.compare(a.missing(), b.missing());
 			if (byMissing != 0) {
 				return byMissing;
 			}
+			// On a tie, a plain crafting table recipe beats a machine or mod alternative. This
+			// keeps "craft the thing" on the obvious recipe instead of a conversion chain.
 			boolean vanillaA = isVanillaCrafting(a.recipe());
 			boolean vanillaB = isVanillaCrafting(b.recipe());
 			if (vanillaA != vanillaB) {
 				return vanillaA ? -1 : 1;
+			}
+			int byUnreachable = Integer.compare(a.unreachable(), b.unreachable());
+			if (byUnreachable != 0) {
+				return byUnreachable;
 			}
 			int byId = recipeKey(a.recipe()).compareTo(recipeKey(b.recipe()));
 			if (byId != 0) {

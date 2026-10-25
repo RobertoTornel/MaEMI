@@ -50,8 +50,14 @@ public final class RecipeRegistry {
 			return Collections.emptyList();
 		}
 		try {
-			return EmiApi.getRecipeManager().getRecipesByOutput(stack);
+			List<EmiRecipe> recipes = EmiApi.getRecipeManager().getRecipesByOutput(stack);
+			if (recipes == null) {
+				Nei.LOG.warn("[NEI] EMI returned a null recipe list for {}", stack);
+				return Collections.emptyList();
+			}
+			return recipes;
 		} catch (Throwable t) {
+			Nei.LOG.warn("[NEI] recipe lookup failed for {}", stack, t);
 			return Collections.emptyList();
 		}
 	}

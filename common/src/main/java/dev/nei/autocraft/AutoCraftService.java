@@ -54,6 +54,8 @@ public final class AutoCraftService {
 		if (client.player == null) {
 			return;
 		}
+		int recipes = dev.nei.recipe.RecipeRegistry.recipesFor(target).size();
+		Nei.LOG.info("[NEI] autocraft lookup {}: {} EMI recipe(s)", dev.nei.util.StackIO.key(target), recipes);
 		CraftPlan candidate = CraftPlanner.plan(target, amount);
 		Nei.LOG.info("[NEI] autocraft {} x{}: {} step(s), missing {}",
 			dev.nei.util.StackIO.key(target), amount, candidate.steps().size(), candidate.missing());

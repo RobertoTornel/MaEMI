@@ -58,8 +58,11 @@ public final class HoveredStack {
 			return resolved;
 		}
 		try {
-			var atCursor = EmiApi.getHoveredStack(
-					(int) client.mouse.getX(), (int) client.mouse.getY(), true);
+			// Mouse coordinates are raw window pixels; EMI works in GUI-scaled units.
+			double scale = Math.max(1.0, client.getWindow().getScaleFactor());
+			int mouseX = (int) (client.mouse.getX() / scale);
+			int mouseY = (int) (client.mouse.getY() / scale);
+			var atCursor = EmiApi.getHoveredStack(mouseX, mouseY, true);
 			resolved = resolve(atCursor);
 			if (!resolved.isEmpty()) {
 				return resolved;
@@ -68,14 +71,6 @@ public final class HoveredStack {
 			Nei.LOG.warn("[NEI] cursor hover lookup failed", t);
 		}
 
-		try {
-			EmiStack panelStack = dev.nei.panel.NeiPanel.get().state().hoveredStack();
-			if (panelStack != null && !panelStack.isEmpty()) {
-				return panelStack;
-			}
-		} catch (Throwable ignored) {
-			// panel not initialised
-		}
 		return EmiStack.EMPTY;
 	}
 }
