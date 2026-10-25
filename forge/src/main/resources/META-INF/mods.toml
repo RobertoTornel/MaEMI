@@ -6,7 +6,7 @@ issueTrackerURL = "https://github.com/"
 [[mods]]
 modId = "nei"
 version = "${version}"
-displayName = "Not Enough Items"
+displayName = "MaEMI"
 authors = "MaEMI-Fabric contributors"
 description = "MaEMI's feature set - item panel, subsets, bookmarks, utility buttons, '?' lookups and autocrafting - bolted onto EMI."
 displayTest = "IGNORE_ALL_VERSION"

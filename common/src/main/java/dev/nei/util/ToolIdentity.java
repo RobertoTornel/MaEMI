@@ -47,7 +47,8 @@ public final class ToolIdentity {
 		// Armour is damageable too, but two different chestplates must not become interchangeable.
 		if (!stack.isEmpty() && stack.isDamageable()
 				&& !(item instanceof net.minecraft.item.ArmorItem)
-				&& !(item instanceof net.minecraft.item.ElytraItem)) {
+				&& !(item instanceof net.minecraft.item.ElytraItem)
+				&& !(item instanceof net.minecraft.item.ShieldItem)) {
 			return true;
 		}
 		Identifier id = Registries.ITEM.getId(item);

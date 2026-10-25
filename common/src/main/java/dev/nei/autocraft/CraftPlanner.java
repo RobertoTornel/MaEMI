@@ -178,8 +178,30 @@ public final class CraftPlanner {
 			return false;
 		}
 		state.stock.put(key, total - (reusable ? 0 : neededHere));
-		state.steps.add(new CraftStep(recipe, (int) batches));
+		// EMI fills a recipe amount as "this many independent crafts". A tool ingredient cannot
+		// supply several copies, so recipes that need a tool are planned as single crafts.
+		if (batches > 1 && hasToolInput(recipe)) {
+			for (long i = 0; i < batches; i++) {
+				state.steps.add(new CraftStep(recipe, 1));
+			}
+		} else {
+			state.steps.add(new CraftStep(recipe, (int) batches));
+		}
 		return true;
+	}
+
+	private static boolean hasToolInput(EmiRecipe recipe) {
+		for (EmiIngredient input : recipe.getInputs()) {
+			if (input == null || input.isEmpty()) {
+				continue;
+			}
+			for (EmiStack candidate : input.getEmiStacks()) {
+				if (ToolIdentity.isTool(candidate)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private static boolean planInput(EmiIngredient input, long needed, int depth, State state,

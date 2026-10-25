@@ -2,7 +2,7 @@
 	"schemaVersion": 1,
 	"id": "nei",
 	"version": "${version}",
-	"name": "Not Enough Items (Fabric)",
+	"name": "MaEMI (Fabric)",
 	"description": "MaEMI's feature set - item panel, subsets, bookmarks, utility buttons, '?' lookups and autocrafting - bolted onto EMI.",
 	"authors": ["MaEMI-Fabric contributors"],
 	"license": "LGPL-3.0-or-later",

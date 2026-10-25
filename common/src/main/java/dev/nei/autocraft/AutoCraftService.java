@@ -10,6 +10,7 @@ import dev.emi.emi.bom.BoM;
 import dev.emi.emi.bom.MaterialNode;
 import dev.emi.emi.registry.EmiRecipeFiller;
 import dev.nei.Nei;
+import dev.nei.util.StackIO;
 import dev.nei.util.HoveredStack;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -62,7 +63,11 @@ public final class AutoCraftService {
 			dev.nei.util.StackIO.key(target), recipes.size(),
 			recipes.stream().filter(fillable).count(),
 			screen == null ? "no screen" : screen.getClass().getSimpleName());
-		if (!recipes.isEmpty() && recipes.stream().noneMatch(fillable)) {
+		if (recipes.isEmpty()) {
+			message(Text.translatable("nei.autocraft.no_recipe"));
+			return;
+		}
+		if (recipes.stream().noneMatch(fillable)) {
 			message(Text.translatable("nei.autocraft.wrong_screen"));
 			return;
 		}
@@ -73,6 +78,13 @@ public final class AutoCraftService {
 			Nei.LOG.info("[MaEMI] plan step {} x{}", planned.recipe().getId(), planned.batches());
 		}
 		if (!candidate.missing().isEmpty()) {
+			// The planner reports the target itself when it has candidate recipes but none can
+			// actually be used here; that is not a missing ingredient, so say what it really is.
+			String targetId = target.getId() == null ? "" : target.getId().toString();
+			if (candidate.missing().size() == 1 && candidate.missing().get(0).equals(targetId)) {
+				message(Text.translatable("nei.autocraft.no_recipe"));
+				return;
+			}
 			message(Text.translatable("nei.autocraft.missing", String.join(", ", candidate.missing())));
 			return;
 		}
