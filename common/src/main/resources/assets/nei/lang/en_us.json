@@ -93,6 +93,7 @@
 	"nei.utility.chunk": "Chunk loader overlay (unavailable)",
 	"nei.subset.add_failed": "Could not create subset",
 	"nei.autocraft.plan": "Craft plan",
+	"nei.autocraft.wrong_screen": "No recipe for that item can be made in this screen. Open the crafting station it needs.",
 	"nei.autocraft.missing": "EMI: cannot craft this yet, missing: %s",
 	"nei.autocraft.depth_limit": "Recipe tree too deep",
 	"nei.autocraft.budget": "Craft limit reached",

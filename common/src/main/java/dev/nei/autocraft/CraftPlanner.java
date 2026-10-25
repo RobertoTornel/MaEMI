@@ -7,6 +7,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.stack.EmiIngredient;
@@ -38,7 +39,7 @@ public final class CraftPlanner {
 		if (target == null || target.isEmpty()) {
 			return new CraftPlan(EmiStack.EMPTY, requested, List.of(), List.of("nothing selected"));
 		}
-		State state = new State(countInventory());
+		State state = new State(countInventory(), recipe -> true);
 		int maxDepth = Math.max(1, NeiConfig.get().autocraft.maxDepth);
 		plan(target, requested, 0, state, new HashSet<>(), maxDepth);
 		return new CraftPlan(target, requested, state.steps, List.copyOf(state.missing));
@@ -49,11 +50,19 @@ public final class CraftPlanner {
 	 * on a stack you own still does something instead of silently deciding you have enough.
 	 */
 	public static CraftPlan planAdditional(EmiStack target, int amount) {
+		return planAdditional(target, amount, recipe -> true);
+	}
+
+	/**
+	 * As above, but only recipes the given filter accepts are considered. Autocrafting uses this to
+	 * keep the plan to recipes the currently open screen can actually fill.
+	 */
+	public static CraftPlan planAdditional(EmiStack target, int amount, Predicate<EmiRecipe> allowed) {
 		int requested = Math.max(1, amount);
 		if (target == null || target.isEmpty()) {
 			return new CraftPlan(EmiStack.EMPTY, requested, List.of(), List.of("nothing selected"));
 		}
-		State state = new State(countInventory());
+		State state = new State(countInventory(), allowed);
 		long have = state.stock.getOrDefault(stockKey(target), 0L);
 		int maxDepth = Math.max(1, NeiConfig.get().autocraft.maxDepth);
 		plan(target, have + requested, 0, state, new HashSet<>(), maxDepth);
@@ -449,14 +458,17 @@ public final class CraftPlanner {
 	}
 
 	private static final class State {
+		final Predicate<EmiRecipe> allowed;
+
 		private final Map<String, Long> stock;
 		private final List<CraftStep> steps = new ArrayList<>();
 		private final Set<String> missing = new LinkedHashSet<>();
 		private final Map<String, Boolean> craftable = new HashMap<>();
 		private int attempts;
 
-		private State(Map<String, Long> stock) {
+		private State(Map<String, Long> stock, Predicate<EmiRecipe> allowed) {
 			this.stock = stock;
+			this.allowed = allowed;
 		}
 	}
 

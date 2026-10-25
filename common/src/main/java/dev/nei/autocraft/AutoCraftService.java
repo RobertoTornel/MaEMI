@@ -54,9 +54,19 @@ public final class AutoCraftService {
 		if (client.player == null) {
 			return;
 		}
-		int recipes = dev.nei.recipe.RecipeRegistry.recipesFor(target).size();
-		Nei.LOG.info("[NEI] autocraft lookup {}: {} EMI recipe(s)", dev.nei.util.StackIO.key(target), recipes);
-		CraftPlan candidate = CraftPlanner.planAdditional(target, amount);
+		List<dev.emi.emi.api.recipe.EmiRecipe> recipes = dev.nei.recipe.RecipeRegistry.recipesFor(target);
+		HandledScreen<?> screen = client.currentScreen instanceof HandledScreen<?> hs ? hs : null;
+		java.util.function.Predicate<dev.emi.emi.api.recipe.EmiRecipe> fillable =
+			recipe -> screen != null && EmiRecipeFiller.getFirstValidHandler(recipe, screen) != null;
+		Nei.LOG.info("[NEI] autocraft lookup {}: {} EMI recipe(s), {} usable in {}",
+			dev.nei.util.StackIO.key(target), recipes.size(),
+			recipes.stream().filter(fillable).count(),
+			screen == null ? "no screen" : screen.getClass().getSimpleName());
+		if (!recipes.isEmpty() && recipes.stream().noneMatch(fillable)) {
+			message(Text.translatable("nei.autocraft.wrong_screen"));
+			return;
+		}
+		CraftPlan candidate = CraftPlanner.planAdditional(target, amount, fillable);
 		Nei.LOG.info("[NEI] autocraft {} x{}: {} step(s), missing {}",
 			dev.nei.util.StackIO.key(target), amount, candidate.steps().size(), candidate.missing());
 		if (!candidate.missing().isEmpty()) {
