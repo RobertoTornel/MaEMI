@@ -42,6 +42,7 @@ public final class CraftPlanner {
 			return new CraftPlan(EmiStack.EMPTY, requested, List.of(), List.of("nothing selected"));
 		}
 		State state = new State(countInventory(), recipe -> true);
+		state.hint = ToolIdentity.materialOf(target);
 		int maxDepth = Math.max(1, NeiConfig.get().autocraft.maxDepth);
 		plan(target, requested, 0, state, new HashSet<>(), maxDepth);
 		return new CraftPlan(target, requested, state.steps, List.copyOf(state.missing));
@@ -65,6 +66,7 @@ public final class CraftPlanner {
 			return new CraftPlan(EmiStack.EMPTY, requested, List.of(), List.of("nothing selected"));
 		}
 		State state = new State(countInventory(), allowed);
+		state.hint = ToolIdentity.materialOf(target);
 		long have = state.stock.getOrDefault(stockKey(target), 0L);
 		int maxDepth = Math.max(1, NeiConfig.get().autocraft.maxDepth);
 		plan(target, have + requested, 0, state, new HashSet<>(), maxDepth);
@@ -365,6 +367,13 @@ public final class CraftPlanner {
 			if (tierA != tierB) {
 				return Integer.compare(tierB, tierA);
 			}
+			// Among equally available candidates, keep the target's material: a wrought iron
+			// tool recipe should ask for a wrought iron file, not an aluminium one.
+			int materialA = materialScore(a, state.hint);
+			int materialB = materialScore(b, state.hint);
+			if (materialA != materialB) {
+				return Integer.compare(materialB, materialA);
+			}
 			long haveA = state.stock.getOrDefault(stockKey(a), 0L);
 			long haveB = state.stock.getOrDefault(stockKey(b), 0L);
 			if (haveA != haveB) {
@@ -373,6 +382,17 @@ public final class CraftPlanner {
 			return stockKey(a).compareTo(stockKey(b));
 		});
 		return options;
+	}
+
+	private static int materialScore(EmiStack stack, String hint) {
+		if (hint.isEmpty() || !ToolIdentity.isTool(stack)) {
+			return 0;
+		}
+		String material = ToolIdentity.materialOf(stack);
+		if (material.equals(hint)) {
+			return 2;
+		}
+		return material.startsWith(hint) || hint.startsWith(material) ? 1 : 0;
 	}
 
 	private static int optionTier(EmiStack stack, long needed, State state, Set<String> path) {
@@ -579,6 +599,7 @@ public final class CraftPlanner {
 		private final List<CraftStep> steps = new ArrayList<>();
 		private final Set<String> missing = new LinkedHashSet<>();
 		private final Map<String, Boolean> craftable = new HashMap<>();
+		private String hint = "";
 		private int attempts;
 
 		private State(Map<String, Long> stock, Predicate<EmiRecipe> allowed) {

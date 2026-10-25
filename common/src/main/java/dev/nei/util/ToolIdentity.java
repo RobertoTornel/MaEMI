@@ -64,6 +64,24 @@ public final class ToolIdentity {
 		return false;
 	}
 
+	/** The material prefix of a tool id: {@code wrought_iron} for {@code wrought_iron_file}. */
+	public static String materialOf(EmiStack stack) {
+		if (stack == null || stack.isEmpty()) {
+			return "";
+		}
+		Identifier id = stack.getId();
+		if (id == null) {
+			return "";
+		}
+		String path = id.getPath();
+		for (String suffix : TOOL_SUFFIXES) {
+			if (path.endsWith(suffix)) {
+				return path.substring(0, path.length() - suffix.length());
+			}
+		}
+		return path;
+	}
+
 	private static boolean hasToolNbt(EmiStack stack) {
 		NbtCompound nbt = stack.getNbt();
 		return nbt != null && nbt.contains("GT.Tool");
