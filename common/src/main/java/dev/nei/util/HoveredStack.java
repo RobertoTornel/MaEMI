@@ -4,7 +4,10 @@ import dev.emi.emi.api.EmiApi;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.nei.Nei;
+import dev.nei.mixin.HandledScreenAccessor;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.screen.slot.Slot;
 
 /** The stack currently under the mouse, whether it is in a slot, EMI's index or the MaEMI panel. */
 public final class HoveredStack {
@@ -69,6 +72,40 @@ public final class HoveredStack {
 			}
 		} catch (Throwable t) {
 			Nei.LOG.warn("[MaEMI] cursor hover lookup failed", t);
+		}
+		// Container slots are the final fallback. This catches screens whose item list is made of
+		// slots rather than EMI widgets, notably AE2's storage/crafting terminals.
+		if (client.currentScreen instanceof HandledScreen<?> screen) {
+			try {
+				HandledScreenAccessor accessor = (HandledScreenAccessor) screen;
+				Slot focused = accessor.nei$getFocusedSlot();
+				if (focused != null && focused.hasStack()) {
+					EmiStack stack = EmiStack.of(focused.getStack());
+					if (!stack.isEmpty()) {
+						return stack;
+					}
+				}
+				// Some screens (AE2's terminal repo in particular) draw their item list as slots
+				// without updating vanilla's focusedSlot. Look up the slot under the cursor.
+				double scale = Math.max(1.0, client.getWindow().getScaleFactor());
+				int mouseX = (int) (client.mouse.getX() / scale);
+				int mouseY = (int) (client.mouse.getY() / scale);
+				for (Slot slot : screen.getScreenHandler().slots) {
+					if (!slot.hasStack()) {
+						continue;
+					}
+					int slotX = accessor.nei$getX() + slot.x;
+					int slotY = accessor.nei$getY() + slot.y;
+					if (mouseX >= slotX && mouseX < slotX + 16 && mouseY >= slotY && mouseY < slotY + 16) {
+						EmiStack stack = EmiStack.of(slot.getStack());
+						if (!stack.isEmpty()) {
+							return stack;
+						}
+					}
+				}
+			} catch (Throwable t) {
+				Nei.LOG.warn("[MaEMI] focused-slot hover lookup failed", t);
+			}
 		}
 
 		return EmiStack.EMPTY;

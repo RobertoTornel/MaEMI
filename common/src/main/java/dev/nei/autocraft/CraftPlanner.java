@@ -9,7 +9,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import dev.emi.emi.registry.EmiRecipeFiller;
+import dev.emi.emi.api.recipe.EmiPlayerInventory;
 import dev.emi.emi.api.recipe.EmiRecipe;
+import dev.emi.emi.api.recipe.handler.EmiRecipeHandler;
+import dev.emi.emi.api.recipe.handler.StandardRecipeHandler;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.nei.Nei;
@@ -18,8 +22,10 @@ import dev.nei.config.NeiConfig;
 import dev.nei.recipe.RecipeRegistry;
 import dev.nei.util.StackIO;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Identifier;
 
 /**
@@ -57,20 +63,58 @@ public final class CraftPlanner {
 	}
 
 	/**
-	 * As above, but only recipes the given filter accepts are considered. Autocrafting uses this to
-	 * keep the plan to recipes the currently open screen can actually fill.
+	 * Plans against an explicit stock snapshot. Autocrafting uses this so items exposed by the
+	 * screen's EMI handler (AE2 network storage, for example) count as available instead of only
+	 * the player inventory.
 	 */
-	public static CraftPlan planAdditional(EmiStack target, int amount, Predicate<EmiRecipe> allowed) {
+	public static CraftPlan planAdditional(EmiStack target, int amount, Predicate<EmiRecipe> allowed,
+			Map<String, Long> stock) {
 		int requested = Math.max(1, amount);
 		if (target == null || target.isEmpty()) {
 			return new CraftPlan(EmiStack.EMPTY, requested, List.of(), List.of("nothing selected"));
 		}
-		State state = new State(countInventory(), allowed);
+		State state = new State(new HashMap<>(stock), allowed);
 		state.hint = ToolIdentity.materialOf(target);
 		long have = state.stock.getOrDefault(stockKey(target), 0L);
 		int maxDepth = Math.max(1, NeiConfig.get().autocraft.maxDepth);
 		plan(target, have + requested, 0, state, new HashSet<>(), maxDepth);
 		return new CraftPlan(target, requested, orderSteps(state.steps), List.copyOf(state.missing));
+	}
+
+	/**
+	 * Finds the largest amount that can actually be crafted, then returns that plan. Used by
+	 * Ctrl+Shift+C. The cap keeps a request bounded to the configured maximum and the planner's
+	 * step limit.
+	 */
+	public static CraftPlan planAll(EmiStack target, int cap, Predicate<EmiRecipe> allowed,
+			Map<String, Long> stock) {
+		int limit = Math.max(1, cap);
+		CraftPlan atLimit = planAdditional(target, limit, allowed, stock);
+		if (atLimit.missing().isEmpty()) {
+			return atLimit;
+		}
+		int low = 1;
+		int high = limit - 1;
+		CraftPlan best = null;
+		while (low <= high) {
+			int middle = (low + high) >>> 1;
+			CraftPlan candidate = planAdditional(target, middle, allowed, stock);
+			if (candidate.missing().isEmpty()) {
+				best = candidate;
+				low = middle + 1;
+			} else {
+				high = middle - 1;
+			}
+		}
+		return best != null ? best : planAdditional(target, 1, allowed, stock);
+	}
+
+	/**
+	 * As above, but only recipes the given filter accepts are considered. Autocrafting uses this to
+	 * keep the plan to recipes the currently open screen can actually fill.
+	 */
+	public static CraftPlan planAdditional(EmiStack target, int amount, Predicate<EmiRecipe> allowed) {
+		return planAdditional(target, amount, allowed, countInventory());
 	}
 
 	/**
@@ -642,11 +686,88 @@ public final class CraftPlanner {
 		return StackIO.key(stack);
 	}
 
-	private static Map<String, Long> countInventory() {
-		Map<String, Long> counts = new HashMap<>();
+	/**
+	 * Stock visible through the open screen. The screen's EMI handler is preferred because it may
+	 * expose storage beyond the player inventory (AE2's terminal handler exposes the ME network);
+	 * the crafting grid and cursor are added on top because handlers generally do not include them.
+	 */
+	public static Map<String, Long> stockForScreen(HandledScreen<?> screen, List<EmiRecipe> recipes) {
+		// AE2 only exposes its network to EMI when the player turns that option on, and it is off
+		// by default. Read the terminal's client-side repo directly so network items are stock
+		// regardless of that setting; fall back to the EMI handler if the repo cannot be read.
+		if (screen != null && screen.getClass().getName().startsWith("appeng.")) {
+			Map<String, Long> network = ae2NetworkStock(screen);
+			if (network != null) {
+				addPlayerInventory(network);
+				addCraftingSlots(screen, network);
+				add(network, screen.getScreenHandler().getCursorStack());
+				return network;
+			}
+		}
+		Map<String, Long> counts = null;
+		if (screen != null) {
+			for (EmiRecipe recipe : recipes) {
+				EmiRecipeHandler<?> handler = EmiRecipeFiller.getFirstValidHandler(recipe, screen);
+				if (!(handler instanceof StandardRecipeHandler)) {
+					continue;
+				}
+				try {
+					@SuppressWarnings({"rawtypes", "unchecked"})
+					EmiPlayerInventory inventory = ((StandardRecipeHandler) handler).getInventory(screen);
+					if (inventory != null && inventory.inventory != null && !inventory.inventory.isEmpty()) {
+						counts = new HashMap<>();
+						for (EmiStack stack : inventory.inventory.values()) {
+							add(counts, stack);
+						}
+						break;
+					}
+				} catch (Throwable t) {
+					Nei.LOG.warn("[MaEMI] could not read screen stock from {}", handler.getClass().getSimpleName(), t);
+				}
+			}
+		}
+		if (counts == null) {
+			counts = countInventory();
+			return counts;
+		}
+		// Standard EMI handlers include the crafting grid in getInputSources (vanilla's handler
+		// covers slots 1-45, AE2's covers player inventory plus its grid), so the grid is not
+		// added again here. Only the no-handler fallback uses countInventory, which does add it.
+		add(counts, screen.getScreenHandler().getCursorStack());
+		return counts;
+	}
+
+	public static boolean isCraftingSlot(Slot slot) {
+		if (slot == null || slot instanceof net.minecraft.screen.slot.CraftingResultSlot
+				|| slot.inventory == null) {
+			return false;
+		}
+		String slotClass = slot.getClass().getName();
+		if (slotClass.contains("CraftingResultSlot") || slotClass.endsWith("CraftingTermSlot")) {
+			return false;
+		}
+		String inventoryClass = slot.inventory.getClass().getName();
+		return slot.inventory instanceof net.minecraft.inventory.CraftingInventory
+				|| slotClass.contains("CraftingMatrixSlot")
+				|| inventoryClass.contains("CraftingInventory")
+				|| inventoryClass.contains("CraftingMatrix");
+	}
+
+	private static void addCraftingSlots(HandledScreen<?> screen, Map<String, Long> counts) {
+		if (screen == null) {
+			return;
+		}
+		for (Slot slot : screen.getScreenHandler().slots) {
+			if (isCraftingSlot(slot)) {
+				add(counts, slot.getStack());
+			}
+		}
+	}
+
+	private static void addPlayerInventory(Map<String, Long> counts) {
 		MinecraftClient client = MinecraftClient.getInstance();
 		if (client.player == null) {
-			return counts;
+			return;
 		}
 		PlayerInventory inventory = client.player.getInventory();
 		for (ItemStack stack : inventory.main) {
@@ -658,17 +779,80 @@ public final class CraftPlanner {
 		for (ItemStack stack : inventory.offHand) {
 			add(counts, stack);
 		}
-		if (client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?> screen) {
-			for (net.minecraft.screen.slot.Slot slot : screen.getScreenHandler().slots) {
-				if (slot instanceof net.minecraft.screen.slot.CraftingResultSlot
-						|| !(slot.inventory instanceof net.minecraft.inventory.CraftingInventory)) {
-					continue;
-				}
-				add(counts, slot.getStack());
-			}
+	}
+
+	private static Map<String, Long> countInventory() {
+		Map<String, Long> counts = new HashMap<>();
+		if (MinecraftClient.getInstance().player == null) {
+			return counts;
+		}
+		addPlayerInventory(counts);
+		if (MinecraftClient.getInstance().currentScreen instanceof HandledScreen<?> screen) {
+			addCraftingSlots(screen, counts);
 			add(counts, screen.getScreenHandler().getCursorStack());
 		}
 		return counts;
+	}
+
+	/**
+	 * Reads AE2's client repo without linking against AE2. Every storage/crafting terminal keeps a
+	 * {@code repo} field with the synced network entries; only item keys are converted here.
+	 */
+	private static Map<String, Long> ae2NetworkStock(HandledScreen<?> screen) {
+		try {
+			Object repo = findField(screen, "repo");
+			if (repo == null) {
+				return null;
+			}
+			Object entriesObject = repo.getClass().getMethod("getAllEntries").invoke(repo);
+			if (!(entriesObject instanceof Iterable<?> entries)) {
+				return null;
+			}
+			Map<String, Long> counts = new HashMap<>();
+			for (Object entry : entries) {
+				Object key = entry.getClass().getMethod("getWhat").invoke(entry);
+				if (key == null || !key.getClass().getName().equals("appeng.api.stacks.AEItemKey")) {
+					continue;
+				}
+				Object storedObject = entry.getClass().getMethod("getStoredAmount").invoke(entry);
+				if (!(storedObject instanceof Number stored) || stored.longValue() <= 0) {
+					continue;
+				}
+				Object stackObject = key.getClass().getMethod("toStack").invoke(key);
+				if (!(stackObject instanceof ItemStack stack) || stack.isEmpty()) {
+					continue;
+				}
+				add(counts, EmiStack.of(stack).setAmount(stored.longValue()));
+			}
+			return counts;
+		} catch (Throwable t) {
+			Nei.LOG.warn("[MaEMI] could not read the AE2 network stock; falling back to the EMI handler", t);
+			return null;
+		}
+	}
+
+	private static Object findField(Object object, String name) throws ReflectiveOperationException {
+		Class<?> type = object.getClass();
+		while (type != null) {
+			try {
+				java.lang.reflect.Field field = type.getDeclaredField(name);
+				field.setAccessible(true);
+				return field.get(object);
+			} catch (NoSuchFieldException ignored) {
+				type = type.getSuperclass();
+			}
+		}
+		return null;
+	}
+
+	private static void add(Map<String, Long> counts, EmiStack stack) {
+		if (stack == null || stack.isEmpty() || stack.getAmount() <= 0) {
+			return;
+		}
+		String key = stockKey(stack);
+		if (!key.isEmpty()) {
+			counts.merge(key, stack.getAmount(), Long::sum);
+		}
 	}
 
 	private static void add(Map<String, Long> counts, ItemStack stack) {

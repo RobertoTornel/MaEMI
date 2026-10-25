@@ -29,8 +29,8 @@ client-side only; it does nothing on a dedicated server.
 
 1. Install EMI (and Fabric API on Fabric) as usual.
 2. Download the jar for your loader from the [latest release](https://github.com/RobertoTornel/nei-fabric/releases/latest):
-   * `maemi-fabric-1.0.0.jar` for Fabric
-   * `maemi-forge-1.0.0.jar` for Forge
+   * `maemi-fabric-1.0.1.jar` for Fabric
+   * `maemi-forge-1.0.1.jar` for Forge
 3. Put exactly one of them in `mods/`. Do not install both loaders' jars in one instance.
 4. Launch the game. The first launch creates `config/nei.json`.
 
@@ -38,6 +38,16 @@ client-side only; it does nothing on a dedicated server.
 
 Hover an item in EMI (or in a container) and press **C**. MaEMI plans the craft and fills the
 supported slots for you.
+
+| Keys | Amount |
+| --- | --- |
+| **C** | 1 |
+| **Ctrl + C** | 32 |
+| **Shift + C** | 64 |
+| **Ctrl + Shift + C** | as many as the current stock allows |
+
+The amount is chosen from the modifiers held when C is pressed, so it works the same in vanilla
+containers, recipe screens and AE2 terminals.
 
 What the planner does:
 
@@ -73,6 +83,22 @@ The recipe must be fillable in the screen that is open:
 
 Only recipes that can run in the current screen are used, including for every intermediate step.
 
+### AE2 terminals
+
+AE2's storage and crafting terminals are supported through their EMI handler:
+
+* hovering an item in the terminal's item list works; the focused slot is used when EMI has no
+  cached hover
+* items in the ME network count as stock even when AE2's "expose network inventory to EMI"
+  option is off (the default): MaEMI reads the terminal's synced client repo directly
+* items in the terminal's own crafting grid count as stock and are returned when the craft ends
+* the plan is filled through AE2's own terminal handler, so network items can be pulled into the
+  grid even without that EMI option; each craft is transferred, the output is taken, and the
+  next craft repeats
+* Ctrl+Shift+C respects the same network stock when calculating the maximum amount
+* AE2's storage terminal item list is hoverable through a slot fallback; autocrafting itself needs
+  a terminal with a crafting grid (the crafting terminal or a wireless crafting terminal)
+
 ## Tool-aware recipe matching
 
 EMI normally compares item NBT. GregTech tools carry generated stats and damage in NBT, so an
@@ -103,7 +129,10 @@ Tags and NBT are off by default because they are noisy in large packs.
 
 | Key | Action |
 | --- | --- |
-| **C** | Autocraft the hovered item |
+| **C** | Autocraft 1 of the hovered item |
+| **Ctrl + C** | Autocraft 32 |
+| **Shift + C** | Autocraft 64 |
+| **Ctrl + Shift + C** | Autocraft as many as possible |
 | **P** | Open MaEMI settings |
 | **F8** | Dump EMI's item and recipe index to `config/nei-dump/` |
 
@@ -116,7 +145,7 @@ Open the settings with **P**, or from Mod Menu on Fabric. The file is `config/ne
 
 Useful sections:
 
-* **Autocraft** — planning depth and related options.
+* **Autocraft** — planning depth and the maximum amount used by Ctrl+Shift+C (default 512).
 * **Tooltip** — enable/disable the extra lines, mod name, registry name, tags, NBT and stack count.
 * **General** — master toggle and compatibility logging.
 
@@ -153,8 +182,8 @@ cd nei-fabric
 
 The jars are written to:
 
-* `fabric/build/libs/maemi-fabric-1.0.0.jar`
-* `forge/build/libs/maemi-forge-1.0.0.jar`
+* `fabric/build/libs/maemi-fabric-1.0.1.jar`
+* `forge/build/libs/maemi-forge-1.0.1.jar`
 
 A Java 21 JDK is recommended; the build targets Java 17 bytecode.
 

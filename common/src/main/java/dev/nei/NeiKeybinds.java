@@ -15,6 +15,7 @@ import dev.nei.config.NeiConfig;
 import dev.nei.platform.NeiKeybind;
 import dev.nei.platform.NeiPlatform;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -104,7 +105,7 @@ public final class NeiKeybinds {
 			}
 			case OPEN_CONFIG -> ConfigScreens.open();
 			case DUMP -> DumpService.dumpAll();
-			case AUTOCRAFT -> AutoCraftService.requestCraftHovered();
+			case AUTOCRAFT -> AutoCraftService.requestCraftHovered(autocraftAmount());
 			case HIDE_ITEM -> {
 				EmiStack stack = HoveredStack.get();
 				if (!stack.isEmpty()) {
@@ -125,6 +126,25 @@ public final class NeiKeybinds {
 				status(NeiConfig.get().cheat.enabled ? "nei.status.cheat_on" : "nei.status.cheat_off");
 			}
 		}
+	}
+
+	/**
+	 * C crafts one, Ctrl+C 32, Shift+C 64 and Ctrl+Shift+C as many as the stock allows. The modifier
+	 * state is read when the bind fires, so it follows the keys actually held with the screen open.
+	 */
+	private static int autocraftAmount() {
+		boolean control = Screen.hasControlDown();
+		boolean shift = Screen.hasShiftDown();
+		if (control && shift) {
+			return 0;
+		}
+		if (control) {
+			return 32;
+		}
+		if (shift) {
+			return 64;
+		}
+		return 1;
 	}
 
 	private static void status(String key) {

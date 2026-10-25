@@ -33,12 +33,13 @@ installs:
 ## Autocrafting pipeline
 
 ```
-C key
-  -> HoveredStack.get()          cached EMI hover, then scaled cursor hover
+C key (+ Ctrl/Shift modifiers)
+  -> HoveredStack.get()          cached EMI hover, scaled cursor hover, focused slot
   -> AutoCraftService.requestCraft
        -> RecipeRegistry.recipesFor(target)
        -> canFillIn(recipe, currentScreen)
-       -> CraftPlanner.planAdditional(target, 1, allowed)
+       -> CraftPlanner.stockForScreen(screen, recipes)
+       -> CraftPlanner.planAdditional / planAll
        -> execution in AutoCraftService.tick()
 ```
 
@@ -54,6 +55,23 @@ C key
 The same predicate is passed into the planner and applied to **every** recursive step, not only
 the requested item. That is what prevents an extruder step being planned while a crafting table is
 open.
+
+### Screen stock
+
+For AE2 screens, `stockForScreen` reads the terminal's client `repo` reflectively and converts every
+`AEItemKey` entry to an `EmiStack` with its stored amount. That is necessary because AE2's
+"expose network inventory to EMI" option defaults to off, which would otherwise hide the network
+from the planner. Player inventory, the terminal's crafting grid and the cursor are added on top.
+If the repo cannot be read (a different AE2 version), the code falls back to the screen's EMI
+handler and its `EmiPlayerInventory`.
+
+For all other screens the EMI handler is the source of starting stock, with the no-handler fallback
+counting the player inventory and vanilla crafting grid. Standard handlers already include their
+crafting grid in `getInputSources`, so the grid is not added a second time for them.
+
+The hover fallback in `HoveredStack` uses `HandledScreen.focusedSlot` after EMI's cached and
+cursor lookups, so item lists that are made of slots (AE2's terminal repo) are hoverable even when
+EMI has no widget hover for them.
 
 ### Planner
 
@@ -71,6 +89,12 @@ open.
 * **Batches** are computed from output amount. Recipes with a reusable tool input are emitted as
   separate one-item steps, because EMI's filler would otherwise require multiple copies of the
   tool.
+* **Amounts** — C plans one, Ctrl+C 32, Shift+C 64 and Ctrl+Shift+C uses `planAll`, which
+  probes the cap and then binary-searches the largest amount whose plan has no missing inputs.
+* **AE2 execution** — AE2's EMI handler only transfers a recipe into its terminal grid and does not
+  take the output. For handlers in `appeng.*`, the executor calls `craft` directly (bypassing the
+  player-inventory-only `canCraft` check), waits for the grid, quick-moves the output slot, and
+  repeats once per batch. This also lets the plan use network stock without changing AE2's config.
 * **Ordering** — after planning, steps are topologically sorted by produced/consumed stock keys so
   an ingredient is always made before the step that consumes it. Independent steps keep planner
   order.
@@ -82,8 +106,8 @@ open.
 `AutoCraftService.tick()` runs one step at a time with a short delay. Before filling it re-resolves
 the handler for the current screen and calls `EmiRecipeFiller.performFill` with the step's batch
 count. Failures are retried a bounded number of times; when the plan ends, fails or is cancelled,
-`returnCraftingItems()` shift-clicks crafting-grid slots and cursor contents back into the player
-inventory.
+`returnCraftingItems()` shift-clicks crafting-grid slots (including AE2's `CraftingMatrixSlot`) and
+cursor contents back into the player inventory.
 
 ## Tooltips and dump
 
