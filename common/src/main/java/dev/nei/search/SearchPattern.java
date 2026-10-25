@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
- * Compiles NEI search text exactly the way NEI's {@code SearchField.getPattern} does.
+ * Compiles MaEMI search text exactly the way MaEMI's {@code SearchField.getPattern} does.
  */
 public final class SearchPattern {
 	private static final int FLAGS = Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;

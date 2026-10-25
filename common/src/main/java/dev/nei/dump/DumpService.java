@@ -69,7 +69,7 @@ public final class DumpService {
 			return;
 		}
 		if (!NeiClient.isInitialised()) {
-			Nei.LOG.warn("[NEI] dump requested before the client was initialised");
+			Nei.LOG.warn("[MaEMI] dump requested before the client was initialised");
 			return;
 		}
 		if (!RUNNING.compareAndSet(false, true)) {
@@ -81,7 +81,7 @@ public final class DumpService {
 			directory = NeiClient.platform().configDirectory().resolve(DIRECTORY);
 		} catch (Throwable t) {
 			RUNNING.set(false);
-			Nei.LOG.error("[NEI] could not resolve the dump directory", t);
+			Nei.LOG.error("[MaEMI] could not resolve the dump directory", t);
 			return;
 		}
 		chat(client, "nei.dump.started");
@@ -99,19 +99,19 @@ public final class DumpService {
 				}
 				chat(client, "nei.dump.done", directory.toAbsolutePath().toString());
 			} catch (Throwable t) {
-				Nei.LOG.error("[NEI] dump failed", t);
+				Nei.LOG.error("[MaEMI] dump failed", t);
 				chat(client, "nei.dump.failed", t.getMessage() == null ? t.getClass().getSimpleName() : t.getMessage());
 			} finally {
 				RUNNING.set(false);
 			}
-		}, "NEI-Dump");
+		}, "MaEMI-Dump");
 		thread.setDaemon(true);
 		thread.start();
 	}
 
 	private static void dumpItemsTo(Path target) throws IOException {
 		writeAtomic(target, writer -> {
-			writer.write("# NEI item dump: id, count, nbt, serialized stack");
+			writer.write("# MaEMI item dump: id, count, nbt, serialized stack");
 			writer.newLine();
 			List<EmiStack> stacks = new ArrayList<>(EmiApi.getIndexStacks());
 			stacks.sort((a, b) -> {
@@ -134,7 +134,7 @@ public final class DumpService {
 
 	private static void dumpRecipesTo(Path target) throws IOException {
 		writeAtomic(target, writer -> {
-			writer.write("# NEI recipe dump: recipe id, category, inputs, outputs");
+			writer.write("# MaEMI recipe dump: recipe id, category, inputs, outputs");
 			writer.newLine();
 			for (EmiRecipe recipe : EmiApi.getRecipeManager().getRecipes()) {
 				if (recipe == null) {
@@ -152,7 +152,7 @@ public final class DumpService {
 
 	private static void dumpTagsTo(Path target) throws IOException {
 		writeAtomic(target, writer -> {
-			writer.write("# NEI tag dump: item id, item tags");
+			writer.write("# MaEMI tag dump: item id, item tags");
 			writer.newLine();
 			List<String> rows = new ArrayList<>();
 			for (Item item : Registries.ITEM) {
@@ -239,7 +239,7 @@ public final class DumpService {
 				}
 			});
 		} catch (Throwable t) {
-			Nei.LOG.warn("[NEI] could not report dump progress", t);
+			Nei.LOG.warn("[MaEMI] could not report dump progress", t);
 		}
 	}
 

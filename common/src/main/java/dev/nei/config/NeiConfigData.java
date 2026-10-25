@@ -18,7 +18,7 @@ public final class NeiConfigData {
 
 	public static final class General {
 		public boolean enabled = true;
-		/** Show the NEI panel on every screen, not just container screens. */
+		/** Show the MaEMI panel on every screen, not just container screens. */
 		public boolean showEverywhere = false;
 		/** Print a compatibility report to the log at startup. */
 		public boolean logCompatReport = true;
@@ -42,7 +42,7 @@ public final class NeiConfigData {
 		public Sort sort = Sort.MOD;
 		/** Keep the search text between screens. */
 		public boolean rememberSearch = true;
-		/** Hide EMI's index sidebar on our side so the NEI panel can take its place. */
+		/** Hide EMI's index sidebar on our side so the MaEMI panel can take its place. */
 		public boolean replaceEmiIndex = false;
 		public int tooltipLines = 0;
 	}
@@ -57,7 +57,7 @@ public final class NeiConfigData {
 
 	public static final class Search {
 		public SearchMode mode = SearchMode.WILDCARD;
-		/** Search tooltips for unprefixed terms as well (NEI only searches names by default). */
+		/** Search tooltips for unprefixed terms as well (MaEMI only searches names by default). */
 		public boolean searchTooltipsByDefault = false;
 		/** Maximum number of search history entries. */
 		public int historySize = 32;

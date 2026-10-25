@@ -11,7 +11,7 @@ module enabled  <=>  every id in requiredMods is loaded
 The check runs inside `NeiCompat.install` during EMI's registration, before the module's
 `install` is called, so a module can freely reference its target mod's classes: if the mod is
 missing, that code is never reached. Every module is also wrapped in a try/catch; a broken module is
-logged and disabled for the session instead of preventing NEI or EMI from starting.
+logged and disabled for the session instead of preventing MaEMI or EMI from starting.
 
 The report is logged at startup and available from the config code through
 `NeiCompat.report()` (id, required mods, enabled/missing reason, preset count).
@@ -19,8 +19,8 @@ The report is logged at startup and available from the config code through
 ## Modules shipped
 
 All current modules are namespace subset presets: when the mod is present, the first time the panel
-is opened NEI creates a subset named after the mod containing every stack whose registry namespace
-belongs to it. This is the 1.20.1 equivalent of NEI's per-mod item lists and costs the host mod
+is opened MaEMI creates a subset named after the mod containing every stack whose registry namespace
+belongs to it. This is the 1.20.1 equivalent of MaEMI's per-mod item lists and costs the host mod
 nothing.
 
 | Module id | Mod ids | Subset |
@@ -45,7 +45,7 @@ edits survive pack updates.
 ## Generic compatibility (no module needed)
 
 * **Any mod's recipes** are visible as soon as it registers with EMI (its own plugin or an EMI
-  addon). NEI does not need a handler per machine.
+  addon). MaEMI does not need a handler per machine.
 * **Machine lookups** use `EmiRecipeManager.getWorkstations(category)`, so the "?" button works for
   every category that declares its workstation, including GregTech, AE2 and Create machines.
 * **Search by tag** uses `$`, resolved through the item's own tags, so `c:` and `forge:`
@@ -55,7 +55,7 @@ edits survive pack updates.
 ## Monifactory (Forge 1.20.1)
 
 Monifactory runs Forge 47.2.0 with EMI 1.1.22 (Forge), GTCEu, AE2, Thermal, Curios, KubeJS and EMI
-Loot. NEI's Forge jar:
+Loot. MaEMI's Forge jar:
 
 * is a normal Forge mod (`mods.toml`, `displayTest = IGNORE_ALL_VERSION`, client only),
 * depends only on `emi` (>= 1.1.20) and optionally `cloth_config`,

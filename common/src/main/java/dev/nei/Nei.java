@@ -20,9 +20,9 @@ public final class Nei {
 
 	public static void init(NeiPlatform plt) {
 		if (platform != null) {
-			throw new IllegalStateException("NEI already initialised");
+			throw new IllegalStateException("MaEMI already initialised");
 		}
 		platform = plt;
-		LOG.info("[NEI] initialising on {} ({})", plt.loaderName(), plt.isDevelopmentEnvironment() ? "dev" : "production");
+		LOG.info("[MaEMI] initialising on {} ({})", plt.loaderName(), plt.isDevelopmentEnvironment() ? "dev" : "production");
 	}
 }

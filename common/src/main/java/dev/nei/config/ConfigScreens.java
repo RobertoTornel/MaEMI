@@ -19,7 +19,7 @@ public final class ConfigScreens {
 			try {
 				return NeiConfigScreen.create(parent);
 			} catch (Throwable t) {
-				Nei.LOG.error("[NEI] Cloth Config screen failed to build", t);
+				Nei.LOG.error("[MaEMI] Cloth Config screen failed to build", t);
 			}
 		}
 		return new FallbackConfigScreen(parent);

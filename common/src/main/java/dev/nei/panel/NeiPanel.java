@@ -8,7 +8,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 
 /**
- * The NEI item panel. One instance lives for the lifetime of the client; state such as the current
+ * The MaEMI item panel. One instance lives for the lifetime of the client; state such as the current
  * page and the search field is preserved while moving between screens when the config asks for it.
  *
  * <p>This class only wires the pieces together: {@link NeiPanelLayout} computes geometry,

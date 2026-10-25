@@ -36,7 +36,7 @@ public final class NeiPlugins {
 				}
 			}
 		} catch (Throwable t) {
-			Nei.LOG.warn("[NEI] could not discover loader plugins", t);
+			Nei.LOG.warn("[MaEMI] could not discover loader plugins", t);
 		}
 		return plugins;
 	}

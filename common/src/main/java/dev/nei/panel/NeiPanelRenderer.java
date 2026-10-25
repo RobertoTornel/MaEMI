@@ -11,7 +11,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 
 /**
- * Draws the NEI item panel: frame, search field, item grid, subset tabs, page label and help button.
+ * Draws the MaEMI item panel: frame, search field, item grid, subset tabs, page label and help button.
  * Everything is read-only and null-safe; a missing client, text renderer or EMI index just means the
  * panel draws nothing instead of crashing.
  */

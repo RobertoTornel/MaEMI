@@ -4,7 +4,7 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.nei.config.NeiConfigData;
 
 /**
- * Mutable UI state for the NEI item panel. It lives as long as the client does, which is what lets
+ * Mutable UI state for the MaEMI item panel. It lives as long as the client does, which is what lets
  * the search text and the selected subset follow the player between screens.
  */
 public final class NeiPanelState {

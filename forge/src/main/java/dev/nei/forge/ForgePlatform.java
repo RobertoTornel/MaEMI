@@ -68,7 +68,7 @@ public final class ForgePlatform implements NeiPlatform {
 							plugins.add((NeiPlugin) clazz.getDeclaredConstructor().newInstance());
 						}
 					} catch (Throwable t) {
-						dev.nei.Nei.LOG.warn("[NEI] could not load plugin {}", data.memberName(), t);
+						dev.nei.Nei.LOG.warn("[MaEMI] could not load plugin {}", data.memberName(), t);
 					}
 				}
 			}

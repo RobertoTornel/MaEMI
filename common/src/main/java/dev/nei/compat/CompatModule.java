@@ -10,7 +10,7 @@ import net.minecraft.text.Text;
 
 /**
  * One optional integration. A module is only loaded when every mod id it requires is present; this
- * is how NEI stays useful in a small pack and still adapts to a kitchen-sink pack like Monifactory.
+ * is how MaEMI stays useful in a small pack and still adapts to a kitchen-sink pack like Monifactory.
  */
 public interface CompatModule {
 	String id();

@@ -8,7 +8,7 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
 /**
- * A compact screen listing the cheat/utility actions NEI used to show as buttons under its item
+ * A compact screen listing the cheat/utility actions MaEMI used to show as buttons under its item
  * panel. Every action is permission-checked by {@link Cheats}; this screen only presents them.
  */
 public final class UtilityScreen extends Screen {

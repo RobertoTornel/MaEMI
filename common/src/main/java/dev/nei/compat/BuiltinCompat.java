@@ -3,7 +3,7 @@ package dev.nei.compat;
 import java.util.List;
 import java.util.Set;
 
-/** The modules NEI ships with. Adding a mod here is the whole cost of a subset-style integration. */
+/** The modules MaEMI ships with. Adding a mod here is the whole cost of a subset-style integration. */
 final class BuiltinCompat {
 	private BuiltinCompat() {
 	}

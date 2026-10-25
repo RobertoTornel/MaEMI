@@ -13,7 +13,7 @@ import net.minecraft.text.Text;
 /**
  * Small modal for renaming or deleting a user subset, opened by shift+right-clicking its tab.
  * Renaming rejects blank or duplicate names with an inline message and keeps the selection on the
- * renamed subset. Deleting falls back to the {@code NEI} tab. Closing returns to the screen that
+ * renamed subset. Deleting falls back to the {@code MaEMI} tab. Closing returns to the screen that
  * opened it.
  */
 public final class SubsetEditScreen extends Screen {
@@ -139,7 +139,7 @@ public final class SubsetEditScreen extends Screen {
 		ItemSubset subset = list.byName(subsetName);
 		if (subset != null && list.delete(subset)) {
 			NeiPanelState state = NeiPanel.get().state();
-			// Deleting a subset always falls back to the NEI tab, even if another tab was selected.
+			// Deleting a subset always falls back to the MaEMI tab, even if another tab was selected.
 			state.setSelectedSubset(null);
 			state.resetPage();
 			dev.nei.util.Messages.status(Text.translatable("nei.subset.deleted", subsetName));

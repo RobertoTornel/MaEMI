@@ -1,15 +1,15 @@
-# NEI feature map
+# MaEMI feature map
 
-Status legend: **ported** = behaves like NEI within 1.20.1 limits; **adapted** = same workflow, different
+Status legend: **ported** = behaves like MaEMI within 1.20.1 limits; **adapted** = same workflow, different
 UI because EMI owns the screen; **not ported** = deliberately left to EMI or impossible without
 forking it.
 
-| NEI feature (2.8.44-GTNH) | Status | Where |
+| MaEMI feature (2.8.44-GTNH) | Status | Where |
 | --- | --- | --- |
 | Item panel beside the GUI | ported | `dev.nei.panel` |
 | Panel side, columns, rows, scale | ported | `NeiConfigData.Panel`, Cloth screen |
 | Panel search bar | ported | `NeiPanelRenderer`, `NeiPanelInput` |
-| NEI search language | ported | `dev.nei.search` (unit tested) |
+| MaEMI search language | ported | `dev.nei.search` (unit tested) |
 | Item subsets (create/rename/delete, add/remove items) | ported | `dev.nei.item`; shift+right-click a subset tab to rename or delete it (`SubsetEditScreen`) |
 | Subset persistence | ported | `config/nei-subsets.json` |
 | Bookmarks + bookmark groups | ported | `dev.nei.bookmark` |

@@ -12,7 +12,7 @@ import net.minecraft.screen.ScreenHandlerType;
 
 /**
  * A small, stable façade over EMI's registry. Plugins get this instead of {@link EmiRegistry} so
- * that NEI can keep track of what was added and so that addons compiled against a slightly older
+ * that MaEMI can keep track of what was added and so that addons compiled against a slightly older
  * EMI still work.
  */
 public final class NeiRegistry {

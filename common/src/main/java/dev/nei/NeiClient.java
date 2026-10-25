@@ -20,12 +20,12 @@ public final class NeiClient {
 		initialised = true;
 		platform = plt;
 		NeiConfig.load(plt.configDirectory());
-		Nei.LOG.info("[NEI] loaded config from {}", NeiConfig.file());
+		Nei.LOG.info("[MaEMI] loaded config from {}", NeiConfig.file());
 	}
 
 	public static NeiPlatform platform() {
 		if (platform == null) {
-			throw new IllegalStateException("NEI client not initialised");
+			throw new IllegalStateException("MaEMI client not initialised");
 		}
 		return platform;
 	}

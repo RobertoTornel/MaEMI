@@ -7,8 +7,8 @@ issueTrackerURL = "https://github.com/"
 modId = "nei"
 version = "${version}"
 displayName = "Not Enough Items"
-authors = "NEI-Fabric contributors"
-description = "NEI's feature set - item panel, subsets, bookmarks, utility buttons, '?' lookups and autocrafting - bolted onto EMI."
+authors = "MaEMI-Fabric contributors"
+description = "MaEMI's feature set - item panel, subsets, bookmarks, utility buttons, '?' lookups and autocrafting - bolted onto EMI."
 displayTest = "IGNORE_ALL_VERSION"
 
 [[dependencies.nei]]

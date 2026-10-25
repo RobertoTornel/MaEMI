@@ -13,7 +13,7 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.text.Text;
 
 /**
- * Immutable geometry for one frame of the NEI item panel. Built from the open screen, the config and
+ * Immutable geometry for one frame of the MaEMI item panel. Built from the open screen, the config and
  * the current state so that rendering, hit testing and scrolling all agree on where things are.
  *
  * <p>The panel is anchored to the edge of the container GUI (or the screen edge on screens without a

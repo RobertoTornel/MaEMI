@@ -14,7 +14,7 @@ import dev.nei.util.JsonFiles;
 import dev.nei.util.StackIO;
 
 /**
- * Stacks the player asked NEI never to show again, mirroring NEI's hidden items list. Keys are
+ * Stacks the player asked MaEMI never to show again, mirroring MaEMI's hidden items list. Keys are
  * registry id plus NBT so a renamed item does not hide the plain one.
  */
 public final class HideList {

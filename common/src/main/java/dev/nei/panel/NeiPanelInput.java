@@ -18,7 +18,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 
 /**
- * Mouse and keyboard handling for the NEI item panel. Left click gives an item (in cheat mode), right
+ * Mouse and keyboard handling for the MaEMI item panel. Left click gives an item (in cheat mode), right
  * click bookmarks it, middle click asks EMI to show its recipes and shift+left click hides it.
  * Recipe and use lookups on R/U are left to EMI.
  */
@@ -60,7 +60,7 @@ public final class NeiPanelInput {
 					client.setScreen(new SubsetEditScreen(screen, tab.subset));
 					return true;
 				}
-				// Right-clicking a tab creates a new subset, like NEI's "..." button.
+				// Right-clicking a tab creates a new subset, like MaEMI's "..." button.
 				ItemSubset created = ItemSubsetList.get().create("Subset");
 				state.setSelectedSubset(created.name());
 				status("nei.panel.subset_created", created.name());
@@ -172,7 +172,7 @@ public final class NeiPanelInput {
 		}
 	}
 
-	/** EMI owns recipe display; this is the same wrapper NEI's own tooltips use. */
+	/** EMI owns recipe display; this is the same wrapper MaEMI's own tooltips use. */
 	private static void displayRecipes(EmiStack stack) {
 		try {
 			RecipeRegistry.displayRecipes(stack);

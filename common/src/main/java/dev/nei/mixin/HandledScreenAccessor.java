@@ -8,7 +8,7 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 
 /**
- * Read-only view of the geometry and state fields of vanilla's {@link HandledScreen}. The NEI panel
+ * Read-only view of the geometry and state fields of vanilla's {@link HandledScreen}. The MaEMI panel
  * is drawn next to the container background, so it needs the background origin and size; the handler
  * and focused slot are exposed for future slot-aware interactions.
  *

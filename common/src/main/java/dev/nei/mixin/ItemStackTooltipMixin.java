@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Adds NEI's extra tooltip lines to every item stack tooltip.
+ * Adds MaEMI's extra tooltip lines to every item stack tooltip.
  *
  * <p>Verified against Yarn 1.20.1 (build 10): {@code ItemStack} has no
  * {@code appendTooltip(ItemStack, World, List, TooltipContext)} method - that one belongs to

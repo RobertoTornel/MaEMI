@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Renders the NEI panel after the container screen has finished drawing (so it sits above slots and
+ * Renders the MaEMI panel after the container screen has finished drawing (so it sits above slots and
  * tooltips) and gives it the first shot at mouse/keyboard input.
  */
 @Mixin(HandledScreen.class)

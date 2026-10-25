@@ -14,8 +14,8 @@ import dev.nei.util.JsonFiles;
 import dev.nei.util.StackIO;
 
 /**
- * NEI's bookmarks: named groups of stacks plus a bounded "recently looked at" history. The
- * bookmark panel is a view over this data; cheaper than EMI's favourites for NEI's use case because
+ * MaEMI's bookmarks: named groups of stacks plus a bounded "recently looked at" history. The
+ * bookmark panel is a view over this data; cheaper than EMI's favourites for MaEMI's use case because
  * it keeps the player's own grouping.
  */
 public final class Bookmarks {

@@ -17,7 +17,7 @@ import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.text.Text;
 
 /**
- * Runs a {@link CraftPlan} against the open screen. NEI's autocrafting is deliberately
+ * Runs a {@link CraftPlan} against the open screen. MaEMI's autocrafting is deliberately
  * screen-driven: it uses the same fill path as EMI's own craft button, so it obeys the screen
  * handler's rules instead of injecting items, and it stops as soon as a step fails.
  */
@@ -41,7 +41,7 @@ public final class AutoCraftService {
 			return;
 		}
 		EmiStack hovered = HoveredStack.get();
-		Nei.LOG.info("[NEI] autocraft key: hovered={}", hovered.isEmpty() ? "none" : dev.nei.util.StackIO.key(hovered));
+		Nei.LOG.info("[MaEMI] autocraft key: hovered={}", hovered.isEmpty() ? "none" : dev.nei.util.StackIO.key(hovered));
 		if (hovered.isEmpty()) {
 			message(Text.translatable("nei.autocraft.nothing"));
 			return;
@@ -58,7 +58,7 @@ public final class AutoCraftService {
 		HandledScreen<?> screen = client.currentScreen instanceof HandledScreen<?> hs ? hs : null;
 		java.util.function.Predicate<dev.emi.emi.api.recipe.EmiRecipe> fillable =
 			recipe -> screen != null && canFillIn(recipe, screen);
-		Nei.LOG.info("[NEI] autocraft lookup {}: {} EMI recipe(s), {} usable in {}",
+		Nei.LOG.info("[MaEMI] autocraft lookup {}: {} EMI recipe(s), {} usable in {}",
 			dev.nei.util.StackIO.key(target), recipes.size(),
 			recipes.stream().filter(fillable).count(),
 			screen == null ? "no screen" : screen.getClass().getSimpleName());
@@ -67,10 +67,10 @@ public final class AutoCraftService {
 			return;
 		}
 		CraftPlan candidate = CraftPlanner.planAdditional(target, amount, fillable);
-		Nei.LOG.info("[NEI] autocraft {} x{}: {} step(s), missing {}",
+		Nei.LOG.info("[MaEMI] autocraft {} x{}: {} step(s), missing {}",
 			dev.nei.util.StackIO.key(target), amount, candidate.steps().size(), candidate.missing());
 		for (CraftStep planned : candidate.steps()) {
-			Nei.LOG.info("[NEI] plan step {} x{}", planned.recipe().getId(), planned.batches());
+			Nei.LOG.info("[MaEMI] plan step {} x{}", planned.recipe().getId(), planned.batches());
 		}
 		if (!candidate.missing().isEmpty()) {
 			message(Text.translatable("nei.autocraft.missing", String.join(", ", candidate.missing())));
@@ -78,7 +78,7 @@ public final class AutoCraftService {
 		}
 		if (candidate.isEmpty()) {
 			// Nothing to do; do not scold the player with "you already have enough".
-			Nei.LOG.info("[NEI] autocraft {}: already satisfied, no steps", dev.nei.util.StackIO.key(target));
+			Nei.LOG.info("[MaEMI] autocraft {}: already satisfied, no steps", dev.nei.util.StackIO.key(target));
 			return;
 		}
 		plan = candidate;
@@ -121,7 +121,7 @@ public final class AutoCraftService {
 		boolean crafted = false;
 		try {
 			Object handler = EmiRecipeFiller.getFirstValidHandler(step.recipe(), screen);
-			Nei.LOG.info("[NEI] step {} recipe {} x{} handler {}", stepIndex + 1, step.recipe().getId(), step.batches(),
+			Nei.LOG.info("[MaEMI] step {} recipe {} x{} handler {}", stepIndex + 1, step.recipe().getId(), step.batches(),
 				handler == null ? "none" : handler.getClass().getSimpleName());
 			if (handler instanceof dev.emi.emi.api.EmiRecipeHandler rawHandler) {
 				try {
@@ -129,19 +129,19 @@ public final class AutoCraftService {
 					dev.emi.emi.api.recipe.handler.EmiCraftContext ctx =
 						new dev.emi.emi.api.recipe.handler.EmiCraftContext(screen, inv,
 							EmiCraftContext.Type.CRAFTABLE, EmiCraftContext.Destination.INVENTORY, step.batches());
-					Nei.LOG.info("[NEI] step canCraft={} inventory={}", rawHandler.canCraft(step.recipe(), ctx),
+					Nei.LOG.info("[MaEMI] step canCraft={} inventory={}", rawHandler.canCraft(step.recipe(), ctx),
 						inv.getCraftables() == null ? "?" : inv.getCraftables().size());
 					java.util.List<net.minecraft.item.ItemStack> stacks =
 						EmiRecipeFiller.getStacks(rawHandler, step.recipe(), screen, step.batches());
-					Nei.LOG.info("[NEI] step getStacks={}", stacks == null ? "null" : stacks);
+					Nei.LOG.info("[MaEMI] step getStacks={}", stacks == null ? "null" : stacks);
 				} catch (Throwable t) {
-					Nei.LOG.warn("[NEI] step diagnostics failed", t);
+					Nei.LOG.warn("[MaEMI] step diagnostics failed", t);
 				}
 			}
 			crafted = EmiRecipeFiller.performFill(step.recipe(), screen, EmiCraftContext.Type.CRAFTABLE,
 				EmiCraftContext.Destination.INVENTORY, step.batches());
 		} catch (Throwable t) {
-			Nei.LOG.error("[NEI] autocraft step failed", t);
+			Nei.LOG.error("[MaEMI] autocraft step failed", t);
 		}
 		if (!crafted) {
 			onFillFailure();
@@ -226,7 +226,7 @@ public final class AutoCraftService {
 				any |= EmiRecipeFiller.performFill(node.recipe, screen, EmiCraftContext.Type.CRAFTABLE,
 					EmiCraftContext.Destination.INVENTORY, (int) node.neededBatches);
 			} catch (Throwable t) {
-				Nei.LOG.error("[NEI] autocraft tree step failed", t);
+				Nei.LOG.error("[MaEMI] autocraft tree step failed", t);
 			}
 		}
 		if (!any) {

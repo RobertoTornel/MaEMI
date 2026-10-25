@@ -3,7 +3,7 @@ package dev.nei.search;
 import java.util.List;
 
 /**
- * Everything the NEI search language is allowed to look at, abstracted away from Minecraft so the
+ * Everything the MaEMI search language is allowed to look at, abstracted away from Minecraft so the
  * parser and its filters stay unit testable.
  */
 public interface SearchTarget {

@@ -18,7 +18,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 /**
- * Builds the extra lines NEI appends to an item's tooltip.
+ * Builds the extra lines MaEMI appends to an item's tooltip.
  *
  * <p>The loader is deliberately not referenced here: mod display names are looked up in a small map
  * that the platform layer fills with {@link #registerModName(String, String)} (and
@@ -100,7 +100,7 @@ public final class TooltipLines {
 		return lines;
 	}
 
-	/** Appends NEI's lines to {@code tooltip}. Safe with a null/empty stack or an immutable list. */
+	/** Appends MaEMI's lines to {@code tooltip}. Safe with a null/empty stack or an immutable list. */
 	public static void append(ItemStack stack, List<Text> tooltip) {
 		if (tooltip == null || stack == null || stack.isEmpty()) {
 			return;

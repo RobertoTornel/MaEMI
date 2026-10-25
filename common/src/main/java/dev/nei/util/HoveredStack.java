@@ -6,7 +6,7 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.nei.Nei;
 import net.minecraft.client.MinecraftClient;
 
-/** The stack currently under the mouse, whether it is in a slot, EMI's index or the NEI panel. */
+/** The stack currently under the mouse, whether it is in a slot, EMI's index or the MaEMI panel. */
 public final class HoveredStack {
 	private HoveredStack() {
 	}
@@ -38,7 +38,7 @@ public final class HoveredStack {
 				}
 			}
 		} catch (Throwable t) {
-			Nei.LOG.warn("[NEI] could not resolve hovered ingredient", t);
+			Nei.LOG.warn("[MaEMI] could not resolve hovered ingredient", t);
 		}
 		return EmiStack.EMPTY;
 	}
@@ -68,7 +68,7 @@ public final class HoveredStack {
 				return resolved;
 			}
 		} catch (Throwable t) {
-			Nei.LOG.warn("[NEI] cursor hover lookup failed", t);
+			Nei.LOG.warn("[MaEMI] cursor hover lookup failed", t);
 		}
 
 		return EmiStack.EMPTY;

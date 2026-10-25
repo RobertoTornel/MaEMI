@@ -2,7 +2,7 @@
 
 ## Goals and constraints
 
-1. **Port NEI's functionality, not its 2013 plumbing.** NEI's 1.7.10 code depends on
+1. **Port MaEMI's functionality, not its 2013 plumbing.** MaEMI's 1.7.10 code depends on
    `GuiContainerManager`, ASM transformers, Item IDs and a packet channel that simply do not exist
    on 1.20.1. Everything is re-implemented against modern Minecraft and EMI.
 2. **EMI is the host, never a fork.** We depend on the published `dev.emi:emi-*:1.1.22+1.20.1`
@@ -21,7 +21,7 @@
 | `dev.nei` | Mod bootstrap, client singleton, key bindings |
 | `dev.nei.platform` | The only loader-facing interface (`NeiPlatform`, `NeiKeybind`) |
 | `dev.nei.config` | JSON config, Cloth Config screen, fallback screen |
-| `dev.nei.search` | NEI's search language parser and filters (pure Java, unit tested) |
+| `dev.nei.search` | MaEMI's search language parser and filters (pure Java, unit tested) |
 | `dev.nei.panel` | Item panel rendering and input |
 | `dev.nei.item` | Item subsets |
 | `dev.nei.bookmark` | Bookmark groups |

@@ -7,7 +7,7 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.nei.util.StackIO;
 
 /**
- * A named collection of stacks, NEI's "item subset". The built-in subsets ({@code NEI} and
+ * A named collection of stacks, MaEMI's "item subset". The built-in subsets ({@code MaEMI} and
  * {@code Bookmarks}) are virtual and cannot be deleted.
  */
 public final class ItemSubset {

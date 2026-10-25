@@ -1,25 +1,25 @@
-# Porting notes: NEI 1.7.10 → 1.20.1 on EMI
+# Porting notes: MaEMI 1.7.10 → 1.20.1 on EMI
 
-This document records what NEI actually does, what EMI provides instead, and where the two do not
+This document records what MaEMI actually does, what EMI provides instead, and where the two do not
 meet. It is the file to read before adding a feature.
 
-## Why not compile NEI?
+## Why not compile MaEMI?
 
-NEI 2.8.44-GTNH depends on:
+MaEMI 2.8.44-GTNH depends on:
 
 * `GuiContainerManager` and `GuiContainerManager.getStackMouseOver` — removed in 1.13+.
-* ASM transformers (`NEITransformer`, `GuiContainerManager.transformer`) — no longer viable.
+* ASM transformers (`MaEMITransformer`, `GuiContainerManager.transformer`) — no longer viable.
 * Numeric item IDs and `ItemList.itemMap` — replaced by registry ids long ago.
-* Its own packet channel and server-side `NEIServerConfig` — Fabric/Forge networking differs.
+* Its own packet channel and server-side `MaEMIServerConfig` — Fabric/Forge networking differs.
 * `IRecipeHandler`/HandlerInfo/GuiRecipe — a complete GUI framework that 1.20.1 mods no longer use.
 
 Porting the code would mean porting the framework, then every handler. EMI already provides the
-framework *and* the handlers for modern mods, so this project implements NEI's **user-facing
+framework *and* the handlers for modern mods, so this project implements MaEMI's **user-facing
 behaviour** on top of EMI instead.
 
 ## Mapping
 
-| NEI concept | 1.20.1 / EMI |
+| MaEMI concept | 1.20.1 / EMI |
 | --- | --- |
 | `IRecipeHandler` + `TemplateRecipeHandler` | `EmiRecipe` / `BasicEmiRecipe` |
 | `API.registerRecipeHandler` | `EmiRegistry.addRecipe` (one recipe per output) |
@@ -28,10 +28,10 @@ behaviour** on top of EMI instead.
 | `IOverlayHandler.craft` | `EmiRecipeHandler.craft(EmiRecipe, EmiCraftContext)` |
 | `IRecipeOverlayRenderer` (ghost grid) | no equivalent |
 | `RecipeTransferRect` (arrows in machine GUI) | no equivalent |
-| `INEIGuiHandler.hideItemPanelSlot` | `EmiRegistry.addExclusionArea` |
+| `IMaEMIGuiHandler.hideItemPanelSlot` | `EmiRegistry.addExclusionArea` |
 | `IStackPositioner` | recipe widgets |
 | `IRecipeFilter` | `EmiRegistry.removeRecipes(Predicate)` at registration time |
-| `IConfigureNEI` | `EmiPlugin` + this mod's `NeiPlugin` |
+| `IConfigureMaEMI` | `EmiPlugin` + this mod's `NeiPlugin` |
 | `RecipeChainMath` / `AutoCraftingManager` | EMI BoM/recipe tree, plus `dev.nei.autocraft` |
 | `Recipe.RecipeId` JSON | `EmiRecipe.getId()` (`Identifier`) |
 | `gtFluidName` fake stacks | native `EmiStack` fluids |
@@ -39,9 +39,9 @@ behaviour** on top of EMI instead.
 
 ## What this mod adds on top of EMI
 
-* An **item panel** (EMI's index is a sidebar; NEI's panel is a full grid next to the GUI, with its
+* An **item panel** (EMI's index is a sidebar; MaEMI's panel is a full grid next to the GUI, with its
   own search and subset tabs).
-* **NEI search syntax**, including `@` mod, `$` tag, `#` tooltip, `&` id, groups, negation and
+* **MaEMI search syntax**, including `@` mod, `$` tag, `#` tooltip, `&` id, groups, negation and
   regex. EMI's own search remains untouched.
 * **Subsets and bookmarks** as first-class, persistent data.
 * **Autocrafting**: a planner that expands the recipe graph from the player's inventory and runs it
@@ -64,10 +64,10 @@ The input layer is deliberate: `Screen.charTyped` and `Screen.mouseScrolled` are
 
 ## Known gaps
 
-1. **No ghost-recipe overlay.** NEI previews a recipe on the crafting grid; EMI only performs it.
+1. **No ghost-recipe overlay.** MaEMI previews a recipe on the crafting grid; EMI only performs it.
    Implementing the preview would need a mixin into EMI's recipe screen and a parallel renderer.
 2. **No transfer rectangles inside machine GUIs.** EMI's recipe handlers work on screen handler
-   types; showing NEI's arrows would require an EMI screen mixin.
+   types; showing MaEMI's arrows would require an EMI screen mixin.
 3. **Panel on non-container screens.** The panel renders only where input can be routed
    (`HandledScreen`). EMI's recipe screen is a `Screen`, so the panel is hidden there; doing it
    properly needs loader screen events (Fabric `ScreenEvents`, Forge `ScreenEvent`) rather than a

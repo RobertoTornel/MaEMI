@@ -20,8 +20,8 @@ import dev.nei.util.ToolIdentity;
 import net.minecraft.util.Identifier;
 
 /**
- * NEI's view of EMI's recipe index. NEI used to own a handler registry; on 1.20.1 EMI is the index,
- * so this class provides the NEI-shaped queries (recipes for a stack, uses of a stack, recipe
+ * MaEMI's view of EMI's recipe index. MaEMI used to own a handler registry; on 1.20.1 EMI is the index,
+ * so this class provides the MaEMI-shaped queries (recipes for a stack, uses of a stack, recipe
  * categories for a workstation) and the plugin bootstrap.
  */
 public final class RecipeRegistry {
@@ -60,7 +60,7 @@ public final class RecipeRegistry {
 		}
 		toolIndexSource = all;
 		toolOutputIndex = index;
-		Nei.LOG.info("[NEI] built tool-output recipe index ({} tool items)", index.size());
+		Nei.LOG.info("[MaEMI] built tool-output recipe index ({} tool items)", index.size());
 		return index;
 	}
 
@@ -73,10 +73,10 @@ public final class RecipeRegistry {
 				plugin.register(facade);
 				plugins++;
 			} catch (Throwable t) {
-				Nei.LOG.error("[NEI] plugin {} failed to register", plugin.modId(), t);
+				Nei.LOG.error("[MaEMI] plugin {} failed to register", plugin.modId(), t);
 			}
 		}
-		Nei.LOG.info("[NEI] recipe registry ready ({} plugin(s))", plugins);
+		Nei.LOG.info("[MaEMI] recipe registry ready ({} plugin(s))", plugins);
 	}
 
 	public static boolean isInitialised() {
@@ -90,7 +90,7 @@ public final class RecipeRegistry {
 		try {
 			List<EmiRecipe> recipes = EmiApi.getRecipeManager().getRecipesByOutput(stack);
 			if (recipes == null) {
-				Nei.LOG.warn("[NEI] EMI returned a null recipe list for {}", stack);
+				Nei.LOG.warn("[MaEMI] EMI returned a null recipe list for {}", stack);
 				return Collections.emptyList();
 			}
 			if (!recipes.isEmpty() || !ToolIdentity.isTool(stack)) {
@@ -100,7 +100,7 @@ public final class RecipeRegistry {
 			return id == null ? Collections.emptyList()
 				: toolOutputIndex().getOrDefault(id, Collections.emptyList());
 		} catch (Throwable t) {
-			Nei.LOG.warn("[NEI] recipe lookup failed for {}", stack, t);
+			Nei.LOG.warn("[MaEMI] recipe lookup failed for {}", stack, t);
 			return Collections.emptyList();
 		}
 	}
@@ -169,7 +169,7 @@ public final class RecipeRegistry {
 				}
 			}
 		} catch (Throwable t) {
-			Nei.LOG.debug("[NEI] workstation lookup failed", t);
+			Nei.LOG.debug("[MaEMI] workstation lookup failed", t);
 		}
 		return result;
 	}

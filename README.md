@@ -1,10 +1,10 @@
-# NEI for 1.20.1 — Not Enough Items, bolted onto EMI
+# MaEMI for 1.20.1 — Not Enough Items, bolted onto EMI
 
-NEI (Not Enough Items) was the recipe viewer and item panel of 1.7.10 modpacks. It cannot be compiled
+MaEMI (Not Enough Items) was the recipe viewer and item panel of 1.7.10 modpacks. It cannot be compiled
 for 1.20.1: it is built on `GuiContainerManager`, ASM transformers, numeric item IDs and a packet
-channel that all disappeared. This project ports **NEI's features and workflows** to Minecraft
+channel that all disappeared. This project ports **MaEMI's features and workflows** to Minecraft
 1.20.1 by building on [EMI](https://github.com/emilyploszaj/emi/) instead of replacing it: EMI keeps
-owning recipe indexing and its own panels, and NEI adds the parts EMI never had.
+owning recipe indexing and its own panels, and MaEMI adds the parts EMI never had.
 
 The result is a single jar for **Fabric** and **Forge** (Architectury multiloader), and every
 compatibility module turns itself off when the mod it targets is not installed.
@@ -12,11 +12,11 @@ compatibility module turns itself off when the mod it targets is not installed.
 ## Features
 
 * **Item panel** next to the container GUI, on either side, with configurable columns and rows.
-  Item grid, search field with NEI's search language, subset tabs, page label, hover tooltips.
-* **NEI search syntax**: plain name search, quotes for literals, `|`, `-`, `!`, groups with
+  Item grid, search field with MaEMI's search language, subset tabs, page label, hover tooltips.
+* **MaEMI search syntax**: plain name search, quotes for literals, `|`, `-`, `!`, groups with
   `{ }`, wildcards `*` and `?`, regular expressions `r/.../`, and the prefixes
   `@mod` (mod name/id), `$tag` (item tag), `#tooltip` and `&identifier`.
-* **Item subsets**: `NEI` (everything), `Bookmarks`, and any number of user subsets created
+* **Item subsets**: `MaEMI` (everything), `Bookmarks`, and any number of user subsets created
   from the panel (right-click a tab to add one; shift+right-click a user tab to rename or delete
   it), stored in `config/nei-subsets.json`. Narrow panels shorten tab labels and show the full
   name as a tooltip instead of hiding tabs.
@@ -39,8 +39,8 @@ compatibility module turns itself off when the mod it targets is not installed.
 * **Cloth Config** screen (`P`, or ModMenu), with a plain fallback screen when Cloth Config is
   absent.
 
-Missing on purpose: NEI's ghost-recipe overlay, transfer-rectangle arrows inside machine GUIs and
-its per-handler tab configuration. Those rely on NEI's own GUI framework; EMI performs crafting
+Missing on purpose: MaEMI's ghost-recipe overlay, transfer-rectangle arrows inside machine GUIs and
+its per-handler tab configuration. Those rely on MaEMI's own GUI framework; EMI performs crafting
 instead of previewing it. See [docs/PORTING.md](docs/PORTING.md).
 
 ## Requirements
@@ -56,7 +56,7 @@ instead of previewing it. See [docs/PORTING.md](docs/PORTING.md).
 Client only. The jars are in `fabric/build/libs` and `forge/build/libs`.
 
 Both jars are built against **EMI 1.1.22** (the version shipped by Monifactory) and accept EMI
-1.1.20 or newer. The Fabric and Forge dev clients were both run on EMI 1.1.22: NEI initialises,
+1.1.20 or newer. The Fabric and Forge dev clients were both run on EMI 1.1.22: MaEMI initialises,
 the EMI plugin registers, the panel renders next to the inventory, typing filters the grid, the
 mouse wheel pages it, and `O` both hides and restores the panel from inside a GUI. Forge
 47.2.0 shows zero mixin failures. Autocrafting execution is accepted by EMI's filler for recipes
@@ -78,7 +78,7 @@ is open (vanilla key bindings do not), and are suppressed while the panel search
 
 ## Compatibility
 
-EMI already unifies recipe display for most 1.20.1 mods, so NEI's compatibility layer focuses on
+EMI already unifies recipe display for most 1.20.1 mods, so MaEMI's compatibility layer focuses on
 things EMI leaves to the pack: namespace-only item subsets for large mods (GregTech, AE2, Create,
 Mekanism, Thermal, Immersive Engineering, Botania, Ars Nouveau, Tinkers', Farmer's Delight, Modern
 Industrialization, Powah, Ad Astra) and data-driven tooltips. A module whose required mod is missing
@@ -92,11 +92,11 @@ is skipped before its classes are touched, and the reason is logged. See
   other blocks without a fillable handler are planned but cannot be executed automatically; the
   service reports the step it cannot perform instead of dropping items on the floor.
 * **Ghost recipe preview** on the crafting grid is not implemented. EMI's recipe screen and its own
-  craft button cover the workflow; NEI's overlay rendered the recipe in-place.
+  craft button cover the workflow; MaEMI's overlay rendered the recipe in-place.
 * **The panel is built for container screens.** `showEverywhere` extends it to screens that call
   `super.render`, but screens that draw over it can cover the panel, and only screens that call
   `super` for input receive clicks.
-* Compatibility subsets are namespace-based, matching NEI's per-mod item list rather than its
+* Compatibility subsets are namespace-based, matching MaEMI's per-mod item list rather than its
   hand-written handler blacklists.
 
 ## Building
@@ -120,6 +120,6 @@ docs/     architecture, feature map, porting notes, compatibility
 
 ## Licence and credits
 
-LGPL-3.0-or-later. NEI was written by ChickenBones and maintained by the GTNH team; this port is an
+LGPL-3.0-or-later. MaEMI was written by ChickenBones and maintained by the GTNH team; this port is an
 independent re-implementation of its behaviour on top of EMI by emilyploszaj and contributors. See
 [docs/CREDITS.md](docs/CREDITS.md).

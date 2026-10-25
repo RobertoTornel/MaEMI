@@ -20,7 +20,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 /**
- * Server-visible actions NEI exposes. All of them are best-effort: they simply do nothing when the
+ * Server-visible actions MaEMI exposes. All of them are best-effort: they simply do nothing when the
  * player lacks the permission the action needs, or when the relevant part of the config is off.
  *
  * <p>Creative item creation is handled fully client-side through
@@ -32,7 +32,7 @@ import net.minecraft.util.Identifier;
 public final class Cheats {
 	private static final int MAX_COMMAND_COUNT = 6400;
 
-	/** The stack most recently hovered in the NEI panel, used by {@link #deleteHovered()}. */
+	/** The stack most recently hovered in the MaEMI panel, used by {@link #deleteHovered()}. */
 	private static EmiStack hovered = EmiStack.EMPTY;
 
 	private Cheats() {
@@ -81,7 +81,7 @@ public final class Cheats {
 				client.interactionManager.clickCreativeStack(copy, slot);
 				return true;
 			} catch (Throwable t) {
-				Nei.LOG.warn("[NEI] creative give failed", t);
+				Nei.LOG.warn("[MaEMI] creative give failed", t);
 			}
 		}
 		if (!client.player.hasPermissionLevel(2)) {
@@ -342,7 +342,7 @@ public final class Cheats {
 			NeiClient.platform().sendCommand(command);
 			return true;
 		} catch (Throwable t) {
-			Nei.LOG.warn("[NEI] could not send command {}", command, t);
+			Nei.LOG.warn("[MaEMI] could not send command {}", command, t);
 			return false;
 		}
 	}

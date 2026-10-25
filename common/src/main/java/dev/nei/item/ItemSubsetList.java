@@ -14,11 +14,11 @@ import dev.nei.util.JsonFiles;
 import dev.nei.util.StackIO;
 
 /**
- * Owns the user-created item subsets and their persistence. {@code NEI} (everything) and
+ * Owns the user-created item subsets and their persistence. {@code MaEMI} (everything) and
  * {@code Bookmarks} are handled by the panel itself and are therefore not stored here.
  */
 public final class ItemSubsetList {
-	public static final String ALL = "NEI";
+	public static final String ALL = "MaEMI";
 	public static final String BOOKMARKS = "Bookmarks";
 
 	private static final ItemSubsetList INSTANCE = new ItemSubsetList();

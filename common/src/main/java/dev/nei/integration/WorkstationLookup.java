@@ -15,7 +15,7 @@ import net.minecraft.util.hit.HitResult;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * NEI's "?" button for machine GUIs, generalised: EMI already knows which workstation stacks belong
+ * MaEMI's "?" button for machine GUIs, generalised: EMI already knows which workstation stacks belong
  * to which recipe category, so we can answer "what does this block make?" for every mod that
  * registers a workstation, without any per-mod code.
  */
@@ -59,7 +59,7 @@ public final class WorkstationLookup {
 		return openFor(EmiStack.of(stack));
 	}
 
-	/** Opens the recipes of the workstation the player is holding (NEI's "?" on a machine item). */
+	/** Opens the recipes of the workstation the player is holding (MaEMI's "?" on a machine item). */
 	public static boolean openForHeldItem() {
 		MinecraftClient client = MinecraftClient.getInstance();
 		if (client.player == null) {

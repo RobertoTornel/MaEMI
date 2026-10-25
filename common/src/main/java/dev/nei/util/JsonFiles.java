@@ -14,7 +14,7 @@ import com.google.gson.JsonParseException;
 
 import dev.nei.Nei;
 
-/** Small helpers for the JSON files NEI keeps next to the game config. */
+/** Small helpers for the JSON files MaEMI keeps next to the game config. */
 public final class JsonFiles {
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
@@ -29,7 +29,7 @@ public final class JsonFiles {
 			T value = GSON.fromJson(reader, type);
 			return value == null ? fallback : value;
 		} catch (IOException | JsonParseException e) {
-			Nei.LOG.warn("[NEI] could not read {}; backing it up and starting fresh", path, e);
+			Nei.LOG.warn("[MaEMI] could not read {}; backing it up and starting fresh", path, e);
 			try {
 				Files.move(path, path.resolveSibling(path.getFileName() + ".corrupt"), StandardCopyOption.REPLACE_EXISTING);
 			} catch (IOException ignored) {
@@ -51,7 +51,7 @@ public final class JsonFiles {
 			}
 			Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
-			Nei.LOG.error("[NEI] could not write {}", path, e);
+			Nei.LOG.error("[MaEMI] could not write {}", path, e);
 		}
 	}
 }

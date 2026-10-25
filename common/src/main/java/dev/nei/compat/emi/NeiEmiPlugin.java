@@ -14,7 +14,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 
 /**
- * EMI entrypoint. EMI owns recipe indexing; NEI contributes its plugins and compatibility modules
+ * EMI entrypoint. EMI owns recipe indexing; MaEMI contributes its plugins and compatibility modules
  * on top. {@code @EmiEntrypoint} is what Forge's scanner looks for; Fabric finds the class through
  * the {@code emi} entrypoint in fabric.mod.json.
  */
@@ -22,17 +22,17 @@ import net.minecraft.registry.Registries;
 public class NeiEmiPlugin implements EmiPlugin {
 	@Override
 	public void register(EmiRegistry registry) {
-		Nei.LOG.info("[NEI] EMI registration started");
+		Nei.LOG.info("[MaEMI] EMI registration started");
 		installToolComparisons(registry);
 		try {
 			RecipeRegistry.init(registry);
 		} catch (Throwable t) {
-			Nei.LOG.error("[NEI] recipe registration failed", t);
+			Nei.LOG.error("[MaEMI] recipe registration failed", t);
 		}
 		try {
 			NeiCompat.install(registry);
 		} catch (Throwable t) {
-			Nei.LOG.error("[NEI] compatibility setup failed", t);
+			Nei.LOG.error("[MaEMI] compatibility setup failed", t);
 		}
 		try {
 			dev.nei.panel.NeiPanel.get().refresh();
@@ -41,7 +41,7 @@ public class NeiEmiPlugin implements EmiPlugin {
 		try {
 			EmiPanelBridge.sync();
 		} catch (Throwable t) {
-			Nei.LOG.warn("[NEI] could not synchronise EMI sidebars", t);
+			Nei.LOG.warn("[MaEMI] could not synchronise EMI sidebars", t);
 		}
 	}
 
@@ -49,7 +49,7 @@ public class NeiEmiPlugin implements EmiPlugin {
 	 * GT tools and other damageable items carry generated NBT (tool stats, damage). EMI's default
 	 * comparison includes that NBT, so a hammer in the inventory does not equal the plain hammer
 	 * ingredient a recipe asks for: the recipe looks uncraftable and recipe outputs do not match the
-	 * hovered tool either. Ignoring NBT for damageable items makes tools behave like NEI tools:
+	 * hovered tool either. Ignoring NBT for damageable items makes tools behave like MaEMI tools:
 	 * interchangeable, reused, and matched to their recipes.
 	 */
 	private static void installToolComparisons(EmiRegistry registry) {
@@ -60,6 +60,6 @@ public class NeiEmiPlugin implements EmiPlugin {
 				count++;
 			}
 		}
-		Nei.LOG.info("[NEI] damageable items compared without NBT: {}", count);
+		Nei.LOG.info("[MaEMI] damageable items compared without NBT: {}", count);
 	}
 }

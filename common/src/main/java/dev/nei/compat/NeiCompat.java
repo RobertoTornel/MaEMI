@@ -44,12 +44,12 @@ public final class NeiCompat {
 			try {
 				module.install(registry);
 			} catch (Throwable t) {
-				Nei.LOG.error("[NEI] compat module {} failed; disabling it", module.id(), t);
+				Nei.LOG.error("[MaEMI] compat module {} failed; disabling it", module.id(), t);
 				DISABLED.add(module.id() + " (error)");
 			}
 		}
 		if (!DISABLED.isEmpty()) {
-			Nei.LOG.info("[NEI] compat modules disabled: {}", String.join(", ", DISABLED));
+			Nei.LOG.info("[MaEMI] compat modules disabled: {}", String.join(", ", DISABLED));
 		}
 	}
 
@@ -168,9 +168,9 @@ public final class NeiCompat {
 						}
 					}
 					ItemSubsetList.get().addAll(subset, matches);
-					Nei.LOG.info("[NEI] compat subset '{}' created with {} stacks", preset.name(), matches.size());
+					Nei.LOG.info("[MaEMI] compat subset '{}' created with {} stacks", preset.name(), matches.size());
 				} catch (Throwable t) {
-					Nei.LOG.warn("[NEI] could not create compat subset {}", preset.name(), t);
+					Nei.LOG.warn("[MaEMI] could not create compat subset {}", preset.name(), t);
 				}
 			}
 		}

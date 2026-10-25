@@ -6,7 +6,7 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
- * Recursive descent parser for NEI's search expression language.
+ * Recursive descent parser for MaEMI's search expression language.
  *
  * <pre>
  * expression := or
@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
  * term       := ('@' | '$' | '#' | '&amp;')? (quoted | regex | bare)
  * </pre>
  *
- * {@code @} matches the mod id/name, {@code $} matches item tags (NEI's ore dictionary),
+ * {@code @} matches the mod id/name, {@code $} matches item tags (MaEMI's ore dictionary),
  * {@code #} matches tooltip lines and {@code &} matches the registry identifier.
  */
 public final class NeiSearchParser {
@@ -184,7 +184,7 @@ public final class NeiSearchParser {
 			case '&' -> t -> SearchPattern.test(pattern, t.identifier());
 			default -> t -> SearchPattern.test(pattern, t.name())
 				|| SearchPattern.test(pattern, t.identifier())
-				// NEI searches the modid implicitly when the query looks like one
+				// MaEMI searches the modid implicitly when the query looks like one
 				|| (lower.indexOf(':') >= 0 && SearchPattern.test(pattern, t.modId() + ":" + t.identifier()));
 		};
 	}

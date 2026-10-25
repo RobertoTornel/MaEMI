@@ -1,7 +1,7 @@
 package dev.nei.search;
 
 /**
- * Mirrors NEI's {@code inventory.search.patternMode} option.
+ * Mirrors MaEMI's {@code inventory.search.patternMode} option.
  */
 public enum SearchMode {
 	/** The query is a literal substring. */

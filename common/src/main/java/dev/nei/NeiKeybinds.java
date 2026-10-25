@@ -18,7 +18,7 @@ import net.minecraft.client.MinecraftClient;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * NEI's client key bindings. The loader modules register the actual platform bindings and call
+ * MaEMI's client key bindings. The loader modules register the actual platform bindings and call
  * {@link #tick()} once per client tick.
  */
 public final class NeiKeybinds {

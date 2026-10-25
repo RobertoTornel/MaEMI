@@ -231,13 +231,13 @@ public final class CraftPlanner {
 			options.add(estimate(recipe, stack, needed, state, path));
 		}
 		if (options.isEmpty() && !candidates.isEmpty()) {
-			Nei.LOG.info("[NEI] no usable recipe for {} among {} candidate(s)", stockKey(stack), candidates.size());
+			Nei.LOG.info("[MaEMI] no usable recipe for {} among {} candidate(s)", stockKey(stack), candidates.size());
 			int shown = 0;
 			for (EmiRecipe recipe : candidates) {
 				if (recipe == null || shown++ >= 4) {
 					continue;
 				}
-				Nei.LOG.info("[NEI]   {} produced={} outputs={}", recipe.getId(), producedAmount(recipe, stack), recipe.getOutputs());
+				Nei.LOG.info("[MaEMI]   {} produced={} outputs={}", recipe.getId(), producedAmount(recipe, stack), recipe.getOutputs());
 			}
 		}
 		// Deterministic order: recipes that can be resolved first, then those needing the fewest

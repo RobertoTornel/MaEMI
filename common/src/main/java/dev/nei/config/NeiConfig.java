@@ -30,7 +30,7 @@ public final class NeiConfig {
 					data = sanitise(loaded);
 				}
 			} catch (IOException | JsonParseException e) {
-				Nei.LOG.error("[NEI] could not read {}; using defaults", path, e);
+				Nei.LOG.error("[MaEMI] could not read {}; using defaults", path, e);
 				data = new NeiConfigData();
 			}
 		}
@@ -67,7 +67,7 @@ public final class NeiConfig {
 				GSON.toJson(data, writer);
 			}
 		} catch (IOException e) {
-			Nei.LOG.error("[NEI] could not write {}", path, e);
+			Nei.LOG.error("[MaEMI] could not write {}", path, e);
 		}
 	}
 

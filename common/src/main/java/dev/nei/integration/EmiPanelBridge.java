@@ -12,8 +12,8 @@ import dev.nei.config.NeiConfig;
 import dev.nei.config.NeiConfigData;
 
 /**
- * Optional interoperability with EMI's own sidebars. When the player asks for it, the NEI panel
- * takes over the side of the screen where EMI shows its index, which is where NEI's panel lived
+ * Optional interoperability with EMI's own sidebars. When the player asks for it, the MaEMI panel
+ * takes over the side of the screen where EMI shows its index, which is where MaEMI's panel lived
  * historically. Nothing is changed unless {@code panel.replaceEmiIndex} is enabled.
  */
 public final class EmiPanelBridge {
@@ -40,9 +40,9 @@ public final class EmiPanelBridge {
 			boolean removed = pages.pages.removeIf(page -> page.type == SidebarType.INDEX);
 			indexRemoved = removed;
 			sideWithRemovedIndex = side;
-			Nei.LOG.info("[NEI] {} EMI index sidebar on the {}", removed ? "hid" : "kept", side.name().toLowerCase());
+			Nei.LOG.info("[MaEMI] {} EMI index sidebar on the {}", removed ? "hid" : "kept", side.name().toLowerCase());
 		} catch (Throwable t) {
-			Nei.LOG.warn("[NEI] could not adjust EMI's sidebar (EMI version mismatch?)", t);
+			Nei.LOG.warn("[MaEMI] could not adjust EMI's sidebar (EMI version mismatch?)", t);
 		}
 	}
 
@@ -53,7 +53,7 @@ public final class EmiPanelBridge {
 				pages.pages.add(0, new SidebarPages.SidebarPage(SidebarType.INDEX));
 			}
 		} catch (Throwable t) {
-			Nei.LOG.warn("[NEI] could not restore EMI's index sidebar", t);
+			Nei.LOG.warn("[MaEMI] could not restore EMI's index sidebar", t);
 		}
 		indexRemoved = false;
 		sideWithRemovedIndex = null;
