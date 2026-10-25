@@ -45,6 +45,22 @@ public final class CraftPlanner {
 	}
 
 	/**
+	 * Plans {@code amount} crafts <em>on top of</em> what the player already carries, so pressing C
+	 * on a stack you own still does something instead of silently deciding you have enough.
+	 */
+	public static CraftPlan planAdditional(EmiStack target, int amount) {
+		int requested = Math.max(1, amount);
+		if (target == null || target.isEmpty()) {
+			return new CraftPlan(EmiStack.EMPTY, requested, List.of(), List.of("nothing selected"));
+		}
+		State state = new State(countInventory());
+		long have = state.stock.getOrDefault(stockKey(target), 0L);
+		int maxDepth = Math.max(1, NeiConfig.get().autocraft.maxDepth);
+		plan(target, have + requested, 0, state, new HashSet<>(), maxDepth);
+		return new CraftPlan(target, requested, state.steps, List.copyOf(state.missing));
+	}
+
+	/**
 	 * Reserves {@code needed} from the stock, crafting the shortfall if possible. The stock is the
 	 * single source of truth for both inventory items and outputs of earlier steps, so an ingredient
 	 * shared by several parents is counted (and consumed) once per parent.
