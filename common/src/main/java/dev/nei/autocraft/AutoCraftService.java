@@ -62,7 +62,8 @@ public final class AutoCraftService {
 			return;
 		}
 		if (candidate.isEmpty()) {
-			message(Text.translatable("nei.autocraft.already"));
+			// Nothing to do; do not scold the player with "you already have enough".
+			Nei.LOG.info("[NEI] autocraft {}: already satisfied, no steps", dev.nei.util.StackIO.key(target));
 			return;
 		}
 		plan = candidate;
