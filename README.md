@@ -123,15 +123,16 @@ step limit. The amount is read from the modifiers held when C is pressed.
 
 ### Supported Minecraft versions
 
-| Minecraft | Fabric | Forge |
-| --- | --- | --- |
-| 1.20.1 | supported | supported |
-| 1.20.2 and newer | not supported without code changes | not supported without code changes |
+| Minecraft | Fabric | Forge | Release branch |
+| --- | --- | --- | --- |
+| 1.20.1 | supported | supported | `main`, `1.20.1` |
+| 1.20.2 | supported | supported | `1.20.2` |
+| 1.20.4 | supported | — | `1.20.4` |
+| 1.20.6 | supported | — | `1.20.6` |
+| 1.21.1 | supported | — | `1.21.x`, `1.21.1` |
 
-MaEMI is built and tested against Minecraft 1.20.1. The 1.20.2 compile check fails because
-`Screen#renderBackground` changed signature; newer versions also replace item NBT with data
-components. None of those ports are code-free. See [version support notes](https://github.com/RobertoTornel/MaEMI/blob/main/docs/VERSIONS.md)
-for the branch layout and the exact boundary.
+See [version support notes](https://github.com/RobertoTornel/MaEMI/blob/main/docs/VERSIONS.md)
+for the full matrix and branch layout.
 
 ## Dependencies
 
