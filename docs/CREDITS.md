@@ -13,6 +13,8 @@
 * **EMI** — emilyploszaj and contributors (https://github.com/emilyploszaj/emi). EMI is the host:
   recipe indexing, recipe screens, stack model and recipe filling. This mod is an addon and does not
   patch or redistribute EMI.
+* **emiautocrafting** — digestlotion (https://github.com/digestlotion/emiautocrafting). Reference for
+  driving EMI's `BoM`/`EmiRecipeFiller` path from a craft plan.
 * **Cloth Config** — shedaniel (https://github.com/shedaniel/ClothConfig) for the settings screen.
 * **Architectury** and **Architectury Loom** for the multiloader build.
 
