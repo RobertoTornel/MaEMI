@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.3
+
+### Autocrafting fixes
+
+- **Only recipes the open screen can run count towards reachability.** A wiremill, packer or
+  assembler recipe no longer makes an item look craftable from a crafting table. This is what made
+  the planner chase octal and hex wires: the machine recipe for them made every wire in a tag look
+  obtainable, so it planned a wire-combining chain the crafting table could never run.
+- **Missing items are named honestly.** When every variant of a tag fails without planning a single
+  step, the report names the ingredient itself instead of whichever variant sorted first. You get
+  "tin wire", not "8x tin wire".
+- **Much faster planning on large tags.** Reachability results are memoised and the "every input in
+  stock" check is cached per stock snapshot. Tags with hundreds of members (oak planks, GT tools)
+  no longer stall the client for many seconds before reporting that something is missing.
+
 ## 1.0.2
 
 ### Autocrafting & Planner Improvements

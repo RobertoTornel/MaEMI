@@ -292,9 +292,12 @@ public final class CraftPlanner {
 				bestStepsPlanned = stepsPlanned;
 			}
 		}
-		if (bestFailure != null && !bestFailure.isEmpty()) {
+		if (bestFailure != null && !bestFailure.isEmpty() && bestStepsPlanned > 0) {
 			state.missing.addAll(bestFailure);
 		} else {
+			// Nothing got anywhere, so the blocker is the ingredient itself rather than one of its
+			// interchangeable alternatives. Naming the canonical stack keeps the message useful:
+			// "tin wire" instead of whichever variant the sorter happened to put first.
 			state.missing.add(describe(input));
 		}
 		return false;
@@ -390,7 +393,7 @@ public final class CraftPlanner {
 					inputSatisfiable = true;
 					break;
 				}
-				if (!blocked.contains(key) && !requiresAny(candidate, blocked, new HashSet<>(), 0)) {
+				if (!blocked.contains(key) && !requiresAny(candidate, blocked, new HashSet<>(), 0, state)) {
 					inputSatisfiable = true;
 					break;
 				}
@@ -406,7 +409,8 @@ public final class CraftPlanner {
 	 * Returns true if every known recipe for {@code stack} requires at least one item in {@code blocked}.
 	 * Used to discard uncrafting/splitting recipes when the composite input is not already in stock.
 	 */
-	private static boolean requiresAny(EmiStack stack, Set<String> blocked, Set<String> visiting, int depth) {
+	private static boolean requiresAny(EmiStack stack, Set<String> blocked, Set<String> visiting, int depth,
+			State state) {
 		if (stack == null || stack.isEmpty()) {
 			return false;
 		}
@@ -414,51 +418,76 @@ public final class CraftPlanner {
 		if (blocked.contains(key)) {
 			return true;
 		}
-		if (visiting.contains(key) || depth >= 5) {
+		if (visiting.contains(key)) {
+			// Re-entering an item we are already resolving means the only way round is through the
+			// blocked set it came from, so this branch cannot produce it independently.
+			return true;
+		}
+		if (depth >= 8) {
 			return false;
 		}
-		List<EmiRecipe> recipes = RecipeRegistry.recipesFor(stack);
-		if (recipes.isEmpty()) {
-			return false;
+		String cacheKey = key + "|" + String.join(",", new java.util.TreeSet<>(blocked));
+		Boolean cached = state.requiresCache.get(cacheKey);
+		if (cached != null) {
+			return cached;
 		}
 		visiting.add(key);
+		boolean result;
 		try {
-			boolean allRequire = true;
-			for (EmiRecipe recipe : recipes) {
-				if (recipe == null || producedAmount(recipe, stack) <= 0 || consumesTarget(recipe, stack)) {
-					continue;
-				}
-				boolean recipeRequires = false;
-				for (EmiIngredient input : recipe.getInputs()) {
-					if (input == null || input.isEmpty()) {
-						continue;
-					}
-					boolean inputRequires = true;
-					for (EmiStack candidate : input.getEmiStacks()) {
-						if (candidate == null || candidate.isEmpty() || ToolIdentity.isTool(candidate)) {
-							inputRequires = false;
-							break;
-						}
-						String candKey = stockKey(candidate);
-						if (!blocked.contains(candKey) && !requiresAny(candidate, blocked, visiting, depth + 1)) {
-							inputRequires = false;
-							break;
-						}
-					}
-					if (inputRequires) {
-						recipeRequires = true;
-						break;
-					}
-				}
-				if (!recipeRequires) {
-					allRequire = false;
-					break;
-				}
-			}
-			return allRequire;
+			result = requiresAnyUncached(stack, blocked, visiting, depth, state);
 		} finally {
 			visiting.remove(key);
 		}
+		state.requiresCache.put(cacheKey, result);
+		return result;
+	}
+
+	private static boolean requiresAnyUncached(EmiStack stack, Set<String> blocked, Set<String> visiting, int depth,
+			State state) {
+		List<EmiRecipe> recipes = RecipeRegistry.recipesFor(stack);
+		boolean anyUsable = false;
+		boolean allRequire = true;
+		for (EmiRecipe recipe : recipes) {
+			if (recipe == null || producedAmount(recipe, stack) <= 0 || consumesTarget(recipe, stack)) {
+				continue;
+			}
+			// Only recipes the open screen can actually run count. Without this a machine recipe
+			// (wiremill, packer, assembler) makes every wire look obtainable from a crafting table,
+			// which is exactly how the planner used to chase octal/hex wires that could not be made.
+			if (!state.allowed.test(recipe)) {
+				continue;
+			}
+			anyUsable = true;
+			boolean recipeRequires = false;
+			for (EmiIngredient input : recipe.getInputs()) {
+				if (input == null || input.isEmpty()) {
+					continue;
+				}
+				boolean inputRequires = true;
+				for (EmiStack candidate : input.getEmiStacks()) {
+					if (candidate == null || candidate.isEmpty() || ToolIdentity.isTool(candidate)) {
+						inputRequires = false;
+						break;
+					}
+					String candKey = stockKey(candidate);
+					if (!blocked.contains(candKey) && !requiresAny(candidate, blocked, visiting, depth + 1, state)) {
+						inputRequires = false;
+						break;
+					}
+				}
+				if (inputRequires) {
+					recipeRequires = true;
+					break;
+				}
+			}
+			if (!recipeRequires) {
+				allRequire = false;
+				break;
+			}
+		}
+		// No recipe this screen can run means the item cannot be produced here at all, so it does
+		// not "require" the blocked set -- it is simply missing.
+		return anyUsable && allRequire;
 	}
 
 	/**
@@ -515,7 +544,8 @@ public final class CraftPlanner {
 			if (state.stock.getOrDefault(key, 0L) >= needFor(candidate, required)) {
 				return true;
 			}
-			if (!path.contains(key) && !requiresAny(candidate, path, new HashSet<>(), 0) && hasRecipe(candidate, state)) {
+			if (!path.contains(key) && !requiresAny(candidate, path, new HashSet<>(), 0, state)
+					&& hasRecipe(candidate, state)) {
 				return true;
 			}
 		}
@@ -586,7 +616,7 @@ public final class CraftPlanner {
 		if (have > 0) {
 			return 4;
 		}
-		if (path.contains(key) || requiresAny(stack, path, new HashSet<>(), 0)) {
+		if (path.contains(key) || requiresAny(stack, path, new HashSet<>(), 0, state)) {
 			return 0;
 		}
 		if (shallowCraftable(stack, state, path)) {
@@ -643,6 +673,16 @@ public final class CraftPlanner {
 	 */
 	private static boolean shallowCraftable(EmiStack stack, State state, Set<String> path) {
 		String key = stockKey(stack);
+		Boolean cached = state.shallowCache.get(key);
+		if (cached != null) {
+			return cached;
+		}
+		boolean result = shallowCraftableUncached(stack, state);
+		state.shallowCache.put(key, result);
+		return result;
+	}
+
+	private static boolean shallowCraftableUncached(EmiStack stack, State state) {
 		for (EmiRecipe recipe : RecipeRegistry.recipesFor(stack)) {
 			if (recipe == null || producedAmount(recipe, stack) <= 0 || !state.allowed.test(recipe)
 					|| consumesTarget(recipe, stack)) {
@@ -682,7 +722,9 @@ public final class CraftPlanner {
 		}
 		boolean craftable = false;
 		for (EmiRecipe recipe : RecipeRegistry.recipesFor(stack)) {
-			if (recipe != null && producedAmount(recipe, stack) > 0) {
+			// Only recipes the open screen can run, and never the ones that eat the item itself.
+			if (recipe != null && producedAmount(recipe, stack) > 0
+					&& state.allowed.test(recipe) && !consumesTarget(recipe, stack)) {
 				craftable = true;
 				break;
 			}
@@ -1048,6 +1090,8 @@ public final class CraftPlanner {
 		}
 		state.missing.clear();
 		state.missing.addAll(missing);
+		// "Has every input in stock" depends on the stock we just rewound.
+		state.shallowCache.clear();
 	}
 
 	private static String describe(EmiStack stack) {
@@ -1076,6 +1120,8 @@ public final class CraftPlanner {
 		private final List<CraftStep> steps = new ArrayList<>();
 		private final Set<String> missing = new LinkedHashSet<>();
 		private final Map<String, Boolean> craftable = new HashMap<>();
+		private final Map<String, Boolean> requiresCache = new HashMap<>();
+		private final Map<String, Boolean> shallowCache = new HashMap<>();
 		private String hint = "";
 		private String targetNamespace = "";
 		private int attempts;
