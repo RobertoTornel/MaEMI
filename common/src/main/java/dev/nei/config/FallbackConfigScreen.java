@@ -25,7 +25,7 @@ public final class FallbackConfigScreen extends Screen {
 
 	@Override
 	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-		renderBackground(context);
+		renderBackground(context, mouseX, mouseY, delta);
 		super.render(context, mouseX, mouseY, delta);
 		context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 40, 0xFFFFFF);
 		String path = NeiConfig.file() == null ? "config/nei.json" : NeiConfig.file().toString();
