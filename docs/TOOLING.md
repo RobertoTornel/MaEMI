@@ -56,7 +56,8 @@ The version comes from `mod_version` in `gradle.properties`.
 | Description | NEI autocrafting for EMI, Works with complex modded trees (Tested on monifactory) |
 
 The project was created as a draft, the Fabric and Forge 1.0.1 versions were uploaded, and the
-project was submitted for review. A draft is not public until Modrinth approves it.
+project was submitted for review. It is not public until Modrinth approves it. Branch and version
+layout is documented in [VERSIONS.md](VERSIONS.md).
 
 Current version ids at the time of writing:
 
