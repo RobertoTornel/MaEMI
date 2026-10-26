@@ -123,15 +123,35 @@ step limit. The amount is read from the modifiers held when C is pressed.
 
 ### Supported Minecraft versions
 
-| Minecraft | Fabric | Forge |
-| --- | --- | --- |
-| 1.20.1 | supported | supported |
-| 1.20.2 and newer | not supported without code changes | not supported without code changes |
+MaEMI is built for every Minecraft version EMI itself ships a build for. Each version lives on its
+own branch; every branch compiles and produces its own jars.
 
-MaEMI is built and tested against Minecraft 1.20.1. The 1.20.2 compile check fails because
-`Screen#renderBackground` changed signature; newer versions also replace item NBT with data
-components. None of those ports are code-free. See [version support notes](https://github.com/RobertoTornel/MaEMI/blob/main/docs/VERSIONS.md)
-for the branch layout and the exact boundary.
+| Minecraft | Fabric | Forge | Branch |
+| --- | --- | --- | --- |
+| 1.18.2 | supported | — | `1.18.2` |
+| 1.19.2 | supported | supported | `1.19.2` |
+| 1.19.3 | supported | supported | `1.19.3` |
+| 1.19.4 | supported | supported | `1.19.4` |
+| 1.20 | supported | supported | `1.20` |
+| **1.20.1** | supported | supported | `main`, `1.20.1` |
+| 1.20.2 | supported | supported | `1.20.2` |
+| 1.20.4 | supported | — | `1.20.4` |
+| 1.20.6 | supported | — | `1.20.6` |
+| 1.21 | supported | — | `1.21` |
+| **1.21.1** | supported | — | `1.21.x`, `1.21.1` |
+
+Bold rows are the two lines with the most testing. Forge exists only through Minecraft 1.20.2;
+from 1.20.4 on the loaders are Fabric and NeoForge, and MaEMI ships Fabric there.
+
+To build every version on one machine:
+
+```bash
+scripts/build-all-versions.sh          # all versions -> dist/<mc>/
+scripts/upload-dist.sh                 # publish those jars to Modrinth
+```
+
+See [version support notes](https://github.com/RobertoTornel/MaEMI/blob/main/docs/VERSIONS.md)
+for the full matrix and branch layout.
 
 ## Dependencies
 
@@ -139,12 +159,12 @@ for the branch layout and the exact boundary.
 
 | Dependency | Version | Notes |
 | --- | --- | --- |
-| Minecraft | 1.20.1 | Forge range is `[1.20.1,1.20.2)` |
-| Java | 17 or newer | The project is built with Java 21 |
-| EMI | 1.1.20 or newer | Tested with EMI 1.1.22+1.20.1 |
-| Fabric Loader | 0.15.0 or newer | Fabric jar only |
-| Fabric API | Matching 1.20.1 build | Fabric jar only; tested with 0.92.2+1.20.1 |
-| Forge | 47.x | Forge jar only; tested with 47.2 and 47.4 |
+| Minecraft | 1.18.2 – 1.21.1 | One branch per version, see the table above |
+| Java | 17 or newer | 21 for the 1.20.5+ branches |
+| EMI | The build for your Minecraft version | Required; nothing works without it |
+| Fabric Loader | 0.15.0 or newer | Fabric jars |
+| Fabric API | Matching your Minecraft version | Fabric jars |
+| Forge | 43.x – 48.x | Forge jars, Minecraft 1.19.2 – 1.20.2 only |
 
 EMI is the only mod MaEMI cannot run without. MaEMI is client-side; installing it on a dedicated
 server does nothing useful.
@@ -153,9 +173,9 @@ server does nothing useful.
 
 | Dependency | Version | Purpose |
 | --- | --- | --- |
-| Cloth Config | 11.0.0 or newer | Normal settings UI |
-| Mod Menu | 7.0.0 or newer | Fabric mod-list config entry |
-| Applied Energistics 2 | 15.x for 1.20.1 | AE2 terminal stock, hover and crafting-grid support |
+| Cloth Config | Matching your version | Normal settings UI |
+| Mod Menu | Matching your version | Fabric mod-list config entry |
+| Applied Energistics 2 | Matching your version | AE2 terminal stock, hover and crafting-grid support |
 
 Without Cloth Config, MaEMI uses its built-in fallback settings screen. Mod Menu is only a shortcut
 to the settings screen on Fabric. AE2 support is entirely optional.

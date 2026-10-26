@@ -37,8 +37,11 @@ public class NeiEmiPlugin implements EmiPlugin {
 			Nei.LOG.error("[MaEMI] compatibility setup failed", t);
 		}
 		try {
-			dev.nei.panel.NeiPanel.get().refresh();
+			// Presets are created lazily against the index this hook just produced; asking for them
+			// here means a fresh EMI reload sees its subset tabs without waiting for a panel render.
+			NeiCompat.ensurePresets();
 		} catch (Throwable ignored) {
+			// Subsets are a convenience; registration must not fail because of them.
 		}
 		try {
 			EmiPanelBridge.sync();
