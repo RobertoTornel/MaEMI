@@ -121,6 +121,18 @@ step limit. The amount is read from the modifiers held when C is pressed.
 - The Forge jar is runtime-guarded to the client; it does not add server content.
 - No blocks, items, entities, world generation, networking or server-side recipes are added.
 
+### Supported Minecraft versions
+
+| Minecraft | Fabric | Forge |
+| --- | --- | --- |
+| 1.20.1 | supported | supported |
+| 1.20.2 and newer | not supported without code changes | not supported without code changes |
+
+MaEMI is built and tested against Minecraft 1.20.1. The 1.20.2 compile check fails because
+`Screen#renderBackground` changed signature; newer versions also replace item NBT with data
+components. None of those ports are code-free. See [version support notes](https://github.com/RobertoTornel/MaEMI/blob/main/docs/VERSIONS.md)
+for the branch layout and the exact boundary.
+
 ## Dependencies
 
 ### Required
