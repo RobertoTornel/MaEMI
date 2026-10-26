@@ -14,25 +14,13 @@ displayTest = "IGNORE_ALL_VERSION"
 [[dependencies.nei]]
 modId = "forge"
 mandatory = true
-versionRange = "[46,)"
-ordering = "NONE"
-side = "CLIENT"
-
-[[dependencies.nei]]
+versionRange = "[46,)]
 modId = "minecraft"
 mandatory = true
-versionRange = "[1.20,1.20.1)"
-ordering = "NONE"
-side = "CLIENT"
-
-[[dependencies.nei]]
+versionRange = "[1.20,1.20.1)]
 modId = "emi"
 mandatory = true
-versionRange = "[1.1.20,)"
-ordering = "AFTER"
-side = "CLIENT"
-
-[[dependencies.nei]]
+versionRange = "[1.0.3,)]
 modId = "cloth_config"
 mandatory = false
 versionRange = "[11.0.0,)"
