@@ -49,6 +49,9 @@ public final class CraftPlanner {
 		}
 		State state = new State(countInventory(), recipe -> true);
 		state.hint = ToolIdentity.materialOf(target);
+		if (target.getId() != null) {
+			state.targetNamespace = target.getId().getNamespace();
+		}
 		int maxDepth = Math.max(1, NeiConfig.get().autocraft.maxDepth);
 		plan(target, requested, 0, state, new HashSet<>(), maxDepth);
 		return new CraftPlan(target, requested, orderSteps(state.steps), List.copyOf(state.missing));
@@ -75,6 +78,9 @@ public final class CraftPlanner {
 		}
 		State state = new State(new HashMap<>(stock), allowed);
 		state.hint = ToolIdentity.materialOf(target);
+		if (target.getId() != null) {
+			state.targetNamespace = target.getId().getNamespace();
+		}
 		long have = state.stock.getOrDefault(stockKey(target), 0L);
 		int maxDepth = Math.max(1, NeiConfig.get().autocraft.maxDepth);
 		plan(target, have + requested, 0, state, new HashSet<>(), maxDepth);
@@ -139,9 +145,11 @@ public final class CraftPlanner {
 			}
 			return true;
 		}
-		if (++state.attempts > MAX_ATTEMPTS || depth >= maxDepth
-				|| state.steps.size() >= MAX_STEPS || path.contains(key)) {
-			// A cycle or the configured depth limit means this branch cannot be resolved.
+		if (path.contains(key)) {
+			// A cycle back to an item already being planned along this path cannot resolve it.
+			return false;
+		}
+		if (++state.attempts > MAX_ATTEMPTS || depth >= maxDepth || state.steps.size() >= MAX_STEPS) {
 			state.missing.add(describe(stack));
 			return false;
 		}
@@ -155,6 +163,7 @@ public final class CraftPlanner {
 			// Try recipes in preference order. Failed attempts are fully rolled back; if none works,
 			// keep the missing leaves of the attempt that got furthest (fewest unresolved inputs).
 			Set<String> bestFailure = null;
+			int bestStepsPlanned = -1;
 			for (RecipeOption option : options) {
 				Map<String, Long> stockBefore = new HashMap<>(state.stock);
 				int stepsBefore = state.steps.size();
@@ -162,10 +171,12 @@ public final class CraftPlanner {
 				if (craft(option.recipe(), stack, needed, depth, state, path, maxDepth)) {
 					return true;
 				}
+				int stepsPlanned = state.steps.size() - stepsBefore;
 				Set<String> failure = new LinkedHashSet<>(state.missing);
 				restore(state, stockBefore, stepsBefore, missingBefore);
-				if (bestFailure == null || failure.size() < bestFailure.size()) {
+				if (bestFailure == null || stepsPlanned > bestStepsPlanned) {
 					bestFailure = failure;
+					bestStepsPlanned = stepsPlanned;
 				}
 			}
 			if (bestFailure != null && !bestFailure.isEmpty()) {
@@ -265,6 +276,7 @@ public final class CraftPlanner {
 			Nei.LOG.info("[MaEMI] tag input {}: {} option(s) {}", describe(input), options.size(), keys);
 		}
 		Set<String> bestFailure = null;
+		int bestStepsPlanned = -1;
 		for (EmiStack option : options) {
 			Map<String, Long> stockBefore = new HashMap<>(state.stock);
 			int stepsBefore = state.steps.size();
@@ -272,10 +284,12 @@ public final class CraftPlanner {
 			if (plan(option, needed, depth, state, path, maxDepth)) {
 				return true;
 			}
+			int stepsPlanned = state.steps.size() - stepsBefore;
 			Set<String> failure = new LinkedHashSet<>(state.missing);
 			restore(state, stockBefore, stepsBefore, missingBefore);
-			if (bestFailure == null || failure.size() < bestFailure.size()) {
+			if (bestFailure == null || stepsPlanned > bestStepsPlanned) {
 				bestFailure = failure;
+				bestStepsPlanned = stepsPlanned;
 			}
 		}
 		if (bestFailure != null && !bestFailure.isEmpty()) {
@@ -297,10 +311,12 @@ public final class CraftPlanner {
 			if (!state.allowed.test(recipe)) {
 				continue;
 			}
-			// Recycling recipes (grindstone disenchanting, repair) take the item itself as input
-			// and give it back. They neither add a copy nor run in a normal crafting screen, so
-			// they must never be how "craft one more" is satisfied.
+			// Recycling recipes take the item itself as input and give it back with zero net gain
 			if (consumesTarget(recipe, stack)) {
+				continue;
+			}
+			// Do not recursively plan uncrafting/splitting recipes if the input is not in stock
+			if (isReverseRecipe(recipe, stack, state, path)) {
 				continue;
 			}
 			options.add(estimate(recipe, stack, needed, state, path));
@@ -315,23 +331,31 @@ public final class CraftPlanner {
 				Nei.LOG.info("[MaEMI]   {} produced={} outputs={}", recipe.getId(), producedAmount(recipe, stack), recipe.getOutputs());
 			}
 		}
-		// Deterministic order: recipes that can be resolved first, then those needing the fewest
-		// items not already in stock, then vanilla crafting and finally recipe identity.
+		// Deterministic order: reachable recipes first, then fewest items not in stock,
+		// plain crafting table over machines, same-mod recipes, higher yield, and recipe identity.
 		options.sort((a, b) -> {
+			int byUnreachable = Integer.compare(a.unreachable(), b.unreachable());
+			if (byUnreachable != 0) {
+				return byUnreachable;
+			}
 			int byMissing = Integer.compare(a.missing(), b.missing());
 			if (byMissing != 0) {
 				return byMissing;
 			}
-			// On a tie, a plain crafting table recipe beats a machine or mod alternative. This
-			// keeps "craft the thing" on the obvious recipe instead of a conversion chain.
 			boolean vanillaA = isVanillaCrafting(a.recipe());
 			boolean vanillaB = isVanillaCrafting(b.recipe());
 			if (vanillaA != vanillaB) {
 				return vanillaA ? -1 : 1;
 			}
-			int byUnreachable = Integer.compare(a.unreachable(), b.unreachable());
-			if (byUnreachable != 0) {
-				return byUnreachable;
+			int modA = sameNamespace(a.recipe(), stack) ? 1 : 0;
+			int modB = sameNamespace(b.recipe(), stack) ? 1 : 0;
+			if (modA != modB) {
+				return Integer.compare(modB, modA);
+			}
+			long prodA = producedAmount(a.recipe(), stack);
+			long prodB = producedAmount(b.recipe(), stack);
+			if (prodA != prodB) {
+				return Long.compare(prodB, prodA);
 			}
 			int byId = recipeKey(a.recipe()).compareTo(recipeKey(b.recipe()));
 			if (byId != 0) {
@@ -340,6 +364,101 @@ public final class CraftPlanner {
 			return Integer.compare(a.recipe().getInputs().size(), b.recipe().getInputs().size());
 		});
 		return options;
+	}
+
+	/**
+	 * Returns true if this recipe requires an input that is not in stock and whose only crafting paths
+	 * cycle back to {@code target} or an item in {@code path}. Such recipes (e.g. 8x wire -> 1x wire,
+	 * diamond block -> 9 diamonds, cable stripping, uncrafting) cannot produce {@code target} from
+	 * scratch and should only be used when the player already carries the composite input.
+	 */
+	private static boolean isReverseRecipe(EmiRecipe recipe, EmiStack target, State state, Set<String> path) {
+		Set<String> blocked = new HashSet<>(path);
+		blocked.add(stockKey(target));
+		for (EmiIngredient input : recipe.getInputs()) {
+			if (input == null || input.isEmpty()) {
+				continue;
+			}
+			boolean inputSatisfiable = false;
+			for (EmiStack candidate : input.getEmiStacks()) {
+				if (candidate == null || candidate.isEmpty() || ToolIdentity.isTool(candidate)) {
+					inputSatisfiable = true;
+					break;
+				}
+				String key = stockKey(candidate);
+				if (state.stock.getOrDefault(key, 0L) >= needFor(candidate, input.getAmount())) {
+					inputSatisfiable = true;
+					break;
+				}
+				if (!blocked.contains(key) && !requiresAny(candidate, blocked, new HashSet<>(), 0)) {
+					inputSatisfiable = true;
+					break;
+				}
+			}
+			if (!inputSatisfiable) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Returns true if every known recipe for {@code stack} requires at least one item in {@code blocked}.
+	 * Used to discard uncrafting/splitting recipes when the composite input is not already in stock.
+	 */
+	private static boolean requiresAny(EmiStack stack, Set<String> blocked, Set<String> visiting, int depth) {
+		if (stack == null || stack.isEmpty()) {
+			return false;
+		}
+		String key = stockKey(stack);
+		if (blocked.contains(key)) {
+			return true;
+		}
+		if (visiting.contains(key) || depth >= 5) {
+			return false;
+		}
+		List<EmiRecipe> recipes = RecipeRegistry.recipesFor(stack);
+		if (recipes.isEmpty()) {
+			return false;
+		}
+		visiting.add(key);
+		try {
+			boolean allRequire = true;
+			for (EmiRecipe recipe : recipes) {
+				if (recipe == null || producedAmount(recipe, stack) <= 0 || consumesTarget(recipe, stack)) {
+					continue;
+				}
+				boolean recipeRequires = false;
+				for (EmiIngredient input : recipe.getInputs()) {
+					if (input == null || input.isEmpty()) {
+						continue;
+					}
+					boolean inputRequires = true;
+					for (EmiStack candidate : input.getEmiStacks()) {
+						if (candidate == null || candidate.isEmpty() || ToolIdentity.isTool(candidate)) {
+							inputRequires = false;
+							break;
+						}
+						String candKey = stockKey(candidate);
+						if (!blocked.contains(candKey) && !requiresAny(candidate, blocked, visiting, depth + 1)) {
+							inputRequires = false;
+							break;
+						}
+					}
+					if (inputRequires) {
+						recipeRequires = true;
+						break;
+					}
+				}
+				if (!recipeRequires) {
+					allRequire = false;
+					break;
+				}
+			}
+			return allRequire;
+		} finally {
+			visiting.remove(key);
+		}
 	}
 
 	/**
@@ -396,7 +515,7 @@ public final class CraftPlanner {
 			if (state.stock.getOrDefault(key, 0L) >= needFor(candidate, required)) {
 				return true;
 			}
-			if (!path.contains(key) && hasRecipe(candidate, state)) {
+			if (!path.contains(key) && !requiresAny(candidate, path, new HashSet<>(), 0) && hasRecipe(candidate, state)) {
 				return true;
 			}
 		}
@@ -415,8 +534,6 @@ public final class CraftPlanner {
 				continue;
 			}
 			options.add(candidate);
-			// Score each candidate once. The comparator used to re-run recipe lookups for every
-			// comparison, which is where the pause after pressing C came from.
 			tiers.put(key, optionTier(candidate, needed, state, path));
 			materials.put(key, materialScore(candidate, state.hint));
 			stock.put(key, state.stock.getOrDefault(key, 0L));
@@ -429,8 +546,11 @@ public final class CraftPlanner {
 			if (tierA != tierB) {
 				return Integer.compare(tierB, tierA);
 			}
-			// Among equally available candidates, keep the target's material: a wrought iron
-			// tool recipe should ask for a wrought iron file, not an aluminium one.
+			int modA = matchesTargetMod(a, state) ? 2 : (isMinecraft(a) ? 1 : 0);
+			int modB = matchesTargetMod(b, state) ? 2 : (isMinecraft(b) ? 1 : 0);
+			if (modA != modB) {
+				return Integer.compare(modB, modA);
+			}
 			int materialA = materials.getOrDefault(keyA, 0);
 			int materialB = materials.getOrDefault(keyB, 0);
 			if (materialA != materialB) {
@@ -461,15 +581,59 @@ public final class CraftPlanner {
 		String key = stockKey(stack);
 		long have = state.stock.getOrDefault(key, 0L);
 		if (have >= needFor(stack, needed)) {
+			return 5;
+		}
+		if (have > 0) {
 			return 4;
 		}
-		if (!path.contains(key) && shallowCraftable(stack, state, path)) {
+		if (path.contains(key) || requiresAny(stack, path, new HashSet<>(), 0)) {
+			return 0;
+		}
+		if (shallowCraftable(stack, state, path)) {
 			return 3;
 		}
-		if (!path.contains(key) && hasRecipe(stack, state)) {
+		if (hasRecipe(stack, state)) {
 			return 2;
 		}
-		return have > 0 ? 1 : 0;
+		return 1;
+	}
+
+	private static boolean sameNamespace(EmiRecipe recipe, EmiStack stack) {
+		try {
+			if (recipe == null || stack == null) {
+				return false;
+			}
+			Identifier recipeId = recipe.getId();
+			Identifier stackId = stack.getId();
+			if (recipeId == null || stackId == null) {
+				return false;
+			}
+			return recipeId.getNamespace().equals(stackId.getNamespace());
+		} catch (Throwable t) {
+			return false;
+		}
+	}
+
+	private static boolean matchesTargetMod(EmiStack stack, State state) {
+		try {
+			if (stack == null || stack.getId() == null || state.targetNamespace == null || state.targetNamespace.isEmpty()) {
+				return false;
+			}
+			return state.targetNamespace.equals(stack.getId().getNamespace());
+		} catch (Throwable t) {
+			return false;
+		}
+	}
+
+	private static boolean isMinecraft(EmiStack stack) {
+		try {
+			if (stack == null || stack.getId() == null) {
+				return false;
+			}
+			return "minecraft".equals(stack.getId().getNamespace());
+		} catch (Throwable t) {
+			return false;
+		}
 	}
 
 	/**
@@ -913,6 +1077,7 @@ public final class CraftPlanner {
 		private final Set<String> missing = new LinkedHashSet<>();
 		private final Map<String, Boolean> craftable = new HashMap<>();
 		private String hint = "";
+		private String targetNamespace = "";
 		private int attempts;
 
 		private State(Map<String, Long> stock, Predicate<EmiRecipe> allowed) {
