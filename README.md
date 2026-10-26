@@ -223,6 +223,7 @@ The loader jars are written to:
 - [Source and issues](https://github.com/RobertoTornel/nei-fabric)
 - [Latest release](https://github.com/RobertoTornel/nei-fabric/releases/latest)
 - [Architecture notes](https://github.com/RobertoTornel/nei-fabric/blob/main/docs/ARCHITECTURE.md)
+- [Tooling and Modrinth upload](https://github.com/RobertoTornel/nei-fabric/blob/main/docs/TOOLING.md)
 - [Credits](https://github.com/RobertoTornel/nei-fabric/blob/main/docs/CREDITS.md)
 
 ## License
