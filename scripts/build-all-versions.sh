@@ -13,6 +13,10 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST="${DIST:-$REPO_ROOT/dist}"
 WORK="${WORK:-$(mktemp -d)}"
 : "${GRADLE_USER_HOME:=$HOME/.gradle}"
+if [ -z "${JAVA_HOME:-}" ] && [ -d "/usr/lib/jvm/java-1.21.0-openjdk-amd64" ]; then
+  export JAVA_HOME="/usr/lib/jvm/java-1.21.0-openjdk-amd64"
+  export PATH="$JAVA_HOME/bin:$PATH"
+fi
 
 # branch:minecraft-version:loaders
 ALL_VERSIONS=(
