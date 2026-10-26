@@ -156,7 +156,8 @@ public final class TooltipLines {
 	}
 
 	private static void appendNbt(ItemStack stack, List<Text> extra) {
-		NbtCompound nbt = stack.getNbt();
+		net.minecraft.component.type.NbtComponent custom = stack.get(net.minecraft.component.DataComponentTypes.CUSTOM_DATA);
+		NbtCompound nbt = custom != null ? custom.copyNbt() : null;
 		if (nbt == null || nbt.isEmpty()) {
 			return;
 		}

@@ -123,7 +123,8 @@ public final class DumpService {
 				if (stack == null || stack.isEmpty() || stack.getId() == null) {
 					continue;
 				}
-				String nbt = stack.getNbt() == null ? "-" : stack.getNbt().asString();
+				net.minecraft.component.ComponentChanges changes = stack.getComponentChanges();
+				String nbt = (changes == null || changes.isEmpty()) ? "-" : changes.toString();
 				JsonElement serialized = StackIO.write(stack);
 				writer.write(stack.getId() + "\t" + stack.getAmount() + "\t" + nbt + "\t"
 						+ (serialized == null ? "-" : serialized.toString()));

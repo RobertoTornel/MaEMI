@@ -67,7 +67,7 @@ public final class SubsetEditScreen extends Screen {
 
 	@Override
 	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-		renderBackground(context);
+		renderBackground(context, mouseX, mouseY, delta);
 		int left = (width - PANEL_WIDTH) / 2;
 		int top = (height - PANEL_HEIGHT) / 2;
 		context.fill(left, top, left + PANEL_WIDTH, top + PANEL_HEIGHT, 0xF0101010);

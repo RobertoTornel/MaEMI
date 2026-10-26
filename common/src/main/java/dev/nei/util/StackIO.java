@@ -54,8 +54,8 @@ public final class StackIO {
 			return "";
 		}
 		Identifier id = stack.getId();
-		NbtCompound nbt = stack.getNbt();
-		return (id == null ? "unknown" : id.toString()) + (nbt == null ? "" : "|" + canonical(nbt));
+		net.minecraft.component.ComponentChanges changes = stack.getComponentChanges();
+		return (id == null ? "unknown" : id.toString()) + (changes == null || changes.isEmpty() ? "" : "|" + changes);
 	}
 
 	/**

@@ -1,6 +1,6 @@
 # MaEMI
 
-MaEMI adds Not Enough Items-style crafting conveniences to **Minecraft 1.20.1** on top of
+MaEMI adds Not Enough Items-style crafting conveniences to **Minecraft 1.21.1** (and 1.20.1 on the `1.20.1` branch) on top of
 [EMI](https://github.com/emilyploszaj/emi/). It does not replace EMI: EMI still owns the item
 index, search, recipe screens and recipe book, and there is no separate MaEMI panel to configure
 away. MaEMI supplies the parts EMI does not:
@@ -123,15 +123,13 @@ step limit. The amount is read from the modifiers held when C is pressed.
 
 ### Supported Minecraft versions
 
-| Minecraft | Fabric | Forge |
+| Minecraft | Fabric | Release Line |
 | --- | --- | --- |
-| 1.20.1 | supported | supported |
-| 1.20.2 and newer | not supported without code changes | not supported without code changes |
+| 1.21.1 | supported | `1.21.x`, `1.21.1` |
+| 1.20.1 | supported | `main`, `1.20.1` (Fabric + Forge) |
 
-MaEMI is built and tested against Minecraft 1.20.1. The 1.20.2 compile check fails because
-`Screen#renderBackground` changed signature; newer versions also replace item NBT with data
-components. None of those ports are code-free. See [version support notes](https://github.com/RobertoTornel/MaEMI/blob/main/docs/VERSIONS.md)
-for the branch layout and the exact boundary.
+See [version support notes](https://github.com/RobertoTornel/MaEMI/blob/main/docs/VERSIONS.md)
+for details on the branch layout and Data Component changes.
 
 ## Dependencies
 
@@ -139,12 +137,11 @@ for the branch layout and the exact boundary.
 
 | Dependency | Version | Notes |
 | --- | --- | --- |
-| Minecraft | 1.20.1 | Forge range is `[1.20.1,1.20.2)` |
-| Java | 17 or newer | The project is built with Java 21 |
-| EMI | 1.1.20 or newer | Tested with EMI 1.1.22+1.20.1 |
-| Fabric Loader | 0.15.0 or newer | Fabric jar only |
-| Fabric API | Matching 1.20.1 build | Fabric jar only; tested with 0.92.2+1.20.1 |
-| Forge | 47.x | Forge jar only; tested with 47.2 and 47.4 |
+| Minecraft | 1.21.1 | Fabric `~1.21.1` |
+| Java | 21 or newer | Built with Java 21 |
+| EMI | 1.1.20 or newer | Tested with EMI 1.1.24+1.21.1 |
+| Fabric Loader | 0.15.0 or newer | Required |
+| Fabric API | Matching 1.21.1 build | Tested with 0.102.0+1.21.1 |
 
 EMI is the only mod MaEMI cannot run without. MaEMI is client-side; installing it on a dedicated
 server does nothing useful.

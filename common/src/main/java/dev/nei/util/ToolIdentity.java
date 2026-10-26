@@ -83,7 +83,12 @@ public final class ToolIdentity {
 	}
 
 	private static boolean hasToolNbt(EmiStack stack) {
-		NbtCompound nbt = stack.getNbt();
+		net.minecraft.item.ItemStack is = stack != null ? stack.getItemStack() : null;
+		if (is == null || is.isEmpty()) {
+			return false;
+		}
+		net.minecraft.component.type.NbtComponent custom = is.get(net.minecraft.component.DataComponentTypes.CUSTOM_DATA);
+		NbtCompound nbt = custom != null ? custom.copyNbt() : null;
 		return nbt != null && nbt.contains("GT.Tool");
 	}
 }
