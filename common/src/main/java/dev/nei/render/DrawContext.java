@@ -13,10 +13,9 @@ import net.minecraft.text.Text;
 /**
  * Minimal {@code DrawContext} stand-in for Minecraft 1.19.x, where the class does not exist yet.
  *
- * <p>MaEMI's panel renderer is written against the 1.20+ {@code DrawContext} API. Rather than fork
+ * <p>MaEMI's panel renderer is written against the 1.20 {@code DrawContext} API. Rather than fork
  * every drawing call for older versions, this shim exposes the same handful of methods and forwards
- * them to the {@link MatrixStack}-based helpers that 1.19.x ships. The render entry points build one
- * of these per frame.
+ * them to the {@link MatrixStack}-based helpers that this version ships.
  */
 public final class DrawContext {
 	private final MatrixStack matrices;
@@ -33,7 +32,7 @@ public final class DrawContext {
 		return matrices;
 	}
 
-	/** No-op: 1.19.x helpers flush their own buffers. */
+	/** No-op: the 1.19.x helpers flush their own buffers. */
 	public void flush() {
 	}
 
@@ -42,7 +41,10 @@ public final class DrawContext {
 	}
 
 	public void drawBorder(int x, int y, int width, int height, int color) {
-		DrawableHelper.drawBorder(matrices, x, y, width, height, color);
+		fill(x, y, x + width, y + 1, color);
+		fill(x, y + height - 1, x + width, y + height, color);
+		fill(x, y, x + 1, y + height, color);
+		fill(x + width - 1, y, x + width, y + height, color);
 	}
 
 	public void drawText(TextRenderer textRenderer, String text, int x, int y, int color, boolean shadow) {
@@ -70,21 +72,21 @@ public final class DrawContext {
 	}
 
 	public void drawCenteredTextWithShadow(TextRenderer textRenderer, Text text, int centerX, int y, int color) {
-		DrawableHelper.drawCenteredTextWithShadow(matrices, textRenderer, text, centerX, y, color);
+		textRenderer.drawWithShadow(matrices, text, centerX - textRenderer.getWidth(text) / 2, y, color);
 	}
 
 	public void drawCenteredTextWithShadow(TextRenderer textRenderer, String text, int centerX, int y, int color) {
-		DrawableHelper.drawCenteredTextWithShadow(matrices, textRenderer, text, centerX, y, color);
+		textRenderer.drawWithShadow(matrices, text, centerX - textRenderer.getWidth(text) / 2, y, color);
 	}
 
 	public void drawItem(ItemStack stack, int x, int y) {
 		MinecraftClient client = MinecraftClient.getInstance();
-		client.getItemRenderer().renderInGuiWithOverrides(matrices, stack, x, y);
+		client.getItemRenderer().renderInGuiWithOverrides(stack, x, y);
 	}
 
 	public void drawItemInSlot(TextRenderer textRenderer, ItemStack stack, int x, int y) {
 		MinecraftClient client = MinecraftClient.getInstance();
-		client.getItemRenderer().renderGuiItemOverlay(matrices, textRenderer, stack, x, y);
+		client.getItemRenderer().renderGuiItemOverlay(textRenderer, stack, x, y);
 	}
 
 	public void drawTooltip(TextRenderer textRenderer, List<Text> lines, int mouseX, int mouseY) {
