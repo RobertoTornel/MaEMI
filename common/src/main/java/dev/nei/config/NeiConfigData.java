@@ -9,8 +9,8 @@ import java.util.Map;
  */
 public final class NeiConfigData {
 	public General general = new General();
-	public Panel panel = new Panel();
 	public Search search = new Search();
+	public Calculator calculator = new Calculator();
 	public Autocraft autocraft = new Autocraft();
 	public Cheat cheat = new Cheat();
 	public Tooltip tooltip = new Tooltip();
@@ -18,41 +18,31 @@ public final class NeiConfigData {
 
 	public static final class General {
 		public boolean enabled = true;
-		/** Show the MaEMI panel on every screen, not just container screens. */
-		public boolean showEverywhere = false;
 		/** Print a compatibility report to the log at startup. */
 		public boolean logCompatReport = true;
 		/** Play a click when an item is given. */
 		public boolean clickSounds = true;
 	}
 
-	public static final class Panel {
-		/** Retired: the custom panel renders nowhere; EMI's own index is used instead. */
-		public boolean enabled = false;
-		public Side side = Side.LEFT;
-		public int columns = 9;
-		public int rows = 8;
-		public boolean showSearchBar = true;
-		public boolean showItemCount = true;
-		public boolean showItemIds = false;
-		public boolean showHiddenItems = false;
-		/** Show the page buttons and the subset tabs. */
-		public boolean showTabs = true;
-		/** Sort mode: NAME, MOD, ID, COUNT. */
-		public Sort sort = Sort.MOD;
-		/** Keep the search text between screens. */
-		public boolean rememberSearch = true;
-		/** Hide EMI's index sidebar on our side so the MaEMI panel can take its place. */
-		public boolean replaceEmiIndex = false;
-		public int tooltipLines = 0;
-	}
-
-	public enum Side {
-		LEFT, RIGHT
-	}
-
-	public enum Sort {
-		NAME, MOD, ID, COUNT
+	/**
+	 * The floating calculator window introduced in 1.0.4. Everything here is restored on startup and
+	 * written back when the window is moved, renamed or closed, so a player keeps their layout.
+	 *
+	 * <p>The panel section this replaces was deleted with the custom item panel; old config files that
+	 * still contain a {@code panel} object load fine because unknown keys are ignored.</p>
+	 */
+	public static final class Calculator {
+		/** Window origin in GUI pixels; negative means "not placed yet", so the default corner is used. */
+		public int x = -1;
+		public int y = -1;
+		public int width = 136;
+		public int height = 46;
+		/** Custom name shown in the title bar; empty falls back to the translated default. */
+		public String name = "";
+		/** Whether the window was open when the game last closed. */
+		public boolean open = true;
+		/** Draw the evaluated result at the right end of EMI's search bar. */
+		public boolean showInSearchBar = true;
 	}
 
 	public static final class Search {
