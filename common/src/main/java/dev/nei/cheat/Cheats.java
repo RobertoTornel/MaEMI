@@ -15,7 +15,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -87,7 +87,7 @@ public final class Cheats {
 		if (!client.player.hasPermissionLevel(2)) {
 			return false;
 		}
-		Identifier id = Registries.ITEM.getId(copy.getItem());
+		Identifier id = Registry.ITEM.getId(copy.getItem());
 		if (id == null) {
 			return false;
 		}
@@ -148,7 +148,7 @@ public final class Cheats {
 		if (held == null || held.isEmpty()) {
 			return false;
 		}
-		Identifier id = Registries.ITEM.getId(held.getItem());
+		Identifier id = Registry.ITEM.getId(held.getItem());
 		return id != null && send("clear @s " + id + " 1");
 	}
 
@@ -207,7 +207,7 @@ public final class Cheats {
 		if (held == null || held.isEmpty()) {
 			return;
 		}
-		Identifier id = Registries.ITEM.getId(held.getItem());
+		Identifier id = Registry.ITEM.getId(held.getItem());
 		if (id == null) {
 			return;
 		}

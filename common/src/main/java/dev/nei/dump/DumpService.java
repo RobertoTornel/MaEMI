@@ -24,7 +24,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -155,7 +155,7 @@ public final class DumpService {
 			writer.write("# MaEMI tag dump: item id, item tags");
 			writer.newLine();
 			List<String> rows = new ArrayList<>();
-			for (Item item : Registries.ITEM) {
+			for (Item item : Registry.ITEM) {
 				if (item == null) {
 					continue;
 				}
@@ -163,7 +163,7 @@ public final class DumpService {
 				if (stack == null || stack.isEmpty()) {
 					continue;
 				}
-				Identifier id = Registries.ITEM.getId(item);
+				Identifier id = Registry.ITEM.getId(item);
 				List<String> tags;
 				try {
 					tags = stack.streamTags().map(tag -> tag.id().toString()).sorted().toList();

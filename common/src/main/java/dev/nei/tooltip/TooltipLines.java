@@ -13,7 +13,7 @@ import dev.nei.config.NeiConfigData;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.registry.Registries;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -111,7 +111,7 @@ public final class TooltipLines {
 			return;
 		}
 		List<Text> extra = new ArrayList<>();
-		Identifier id = Registries.ITEM.getId(stack.getItem());
+		Identifier id = Registry.ITEM.getId(stack.getItem());
 		if (id != null && cfg.showRegistryName) {
 			extra.add(Text.translatable("nei.tooltip.id", id.toString()));
 		}

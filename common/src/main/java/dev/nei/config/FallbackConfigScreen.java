@@ -19,8 +19,8 @@ public final class FallbackConfigScreen extends Screen {
 
 	@Override
 	protected void init() {
-		addDrawableChild(ButtonWidget.builder(Text.translatable("gui.done"), b -> close())
-			.dimensions(width / 2 - 100, height - 40, 200, 20).build());
+		addDrawableChild(new ButtonWidget(width / 2 - 100, height - 40, 200, 20,
+			Text.translatable("gui.done"), b -> close()));
 	}
 
 	@Override

@@ -43,8 +43,8 @@ public final class ForgePlatform implements NeiPlatform {
 	@Override
 	public void sendCommand(String command) {
 		MinecraftClient client = MinecraftClient.getInstance();
-		if (client.getNetworkHandler() != null) {
-			client.getNetworkHandler().sendCommand(command);
+		if (client.getNetworkHandler() != null && client.player != null) {
+			client.player.sendCommand(command);
 		}
 	}
 

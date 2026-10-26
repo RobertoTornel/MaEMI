@@ -11,7 +11,7 @@ import dev.nei.util.ToolIdentity;
 import dev.emi.emi.api.stack.Comparison;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.util.registry.Registry;
 
 /**
  * EMI entrypoint. EMI owns recipe indexing; MaEMI contributes its plugins and compatibility modules
@@ -58,7 +58,7 @@ public class NeiEmiPlugin implements EmiPlugin {
 	 */
 	private static void installToolComparisons(EmiRegistry registry) {
 		int count = 0;
-		for (Item item : Registries.ITEM) {
+		for (Item item : Registry.ITEM) {
 			if (ToolIdentity.isToolItem(item)) {
 				registry.setDefaultComparison(item, old -> Comparison.DEFAULT_COMPARISON);
 				count++;

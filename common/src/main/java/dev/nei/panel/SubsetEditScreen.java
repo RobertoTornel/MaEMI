@@ -52,15 +52,12 @@ public final class SubsetEditScreen extends Screen {
 
 		int x = left + 20;
 		int y = top + 108;
-		addDrawableChild(ButtonWidget.builder(Text.translatable("nei.subset.rename"), button -> rename())
-				.dimensions(x, y, BUTTON_WIDTH, 20)
-				.build());
-		addDrawableChild(ButtonWidget.builder(Text.translatable("nei.subset.delete"), button -> delete())
-				.dimensions(x + BUTTON_WIDTH + BUTTON_GAP, y, BUTTON_WIDTH, 20)
-				.build());
-		addDrawableChild(ButtonWidget.builder(Text.translatable("nei.subset.cancel"), button -> close())
-				.dimensions(x + 2 * (BUTTON_WIDTH + BUTTON_GAP), y, BUTTON_WIDTH, 20)
-				.build());
+		addDrawableChild(new ButtonWidget(x, y, BUTTON_WIDTH, 20,
+				Text.translatable("nei.subset.rename"), button -> rename()));
+		addDrawableChild(new ButtonWidget(x + BUTTON_WIDTH + BUTTON_GAP, y, BUTTON_WIDTH, 20,
+				Text.translatable("nei.subset.delete"), button -> delete()));
+		addDrawableChild(new ButtonWidget(x + 2 * (BUTTON_WIDTH + BUTTON_GAP), y, BUTTON_WIDTH, 20,
+				Text.translatable("nei.subset.cancel"), button -> close()));
 
 		setInitialFocus(nameField);
 	}

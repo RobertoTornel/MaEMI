@@ -33,13 +33,11 @@ public final class UtilityScreen extends Screen {
 			Cheats.CheatAction action = actions.get(i);
 			int x = startX + (i % columns) * (buttonWidth + gap);
 			int y = startY + (i / columns) * (buttonHeight + gap);
-			addDrawableChild(ButtonWidget.builder(action.label(), button -> action.action().accept(this))
-				.dimensions(x, y, buttonWidth, buttonHeight)
-				.build());
+			addDrawableChild(new ButtonWidget(x, y, buttonWidth, buttonHeight, action.label(),
+				button -> action.action().accept(this)));
 		}
-		addDrawableChild(ButtonWidget.builder(Text.translatable("gui.done"), button -> close())
-			.dimensions(width / 2 - 60, height - 30, 120, 20)
-			.build());
+		addDrawableChild(new ButtonWidget(width / 2 - 60, height - 30, 120, 20,
+			Text.translatable("gui.done"), button -> close()));
 	}
 
 	@Override

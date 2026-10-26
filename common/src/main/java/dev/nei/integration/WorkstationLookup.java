@@ -9,7 +9,7 @@ import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import org.jetbrains.annotations.Nullable;
@@ -85,6 +85,6 @@ public final class WorkstationLookup {
 		if (stack == null || stack.isEmpty()) {
 			return "";
 		}
-		return Registries.ITEM.getId(stack.getItemStack().getItem()).toString();
+		return Registry.ITEM.getId(stack.getItemStack().getItem()).toString();
 	}
 }
