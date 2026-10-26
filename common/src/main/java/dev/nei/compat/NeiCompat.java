@@ -144,7 +144,7 @@ public final class NeiCompat {
 			return;
 		}
 		// Copy off EMI's live index; it is rebuilt on EMI's reload thread.
-		List<EmiStack> index = dev.nei.panel.ItemPanelSource.snapshotEmiIndex();
+		List<EmiStack> index = dev.nei.item.ItemIndex.snapshot();
 		if (index == null || index.isEmpty()) {
 			return;
 		}

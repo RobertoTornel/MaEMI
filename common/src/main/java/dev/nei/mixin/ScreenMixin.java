@@ -11,13 +11,25 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Optional panel support for screens that are not container screens. Container screens are handled
- * by HandledScreenMixin, which knows the GUI bounds and draws last.
+ * Draws and feeds the calculator overlay on screens that are not container screens. Container screens
+ * are handled by {@link HandledScreenMixin}, which hooks the point after the item grid; the
+ * {@code instanceof} guard here is what keeps a single screen from being drawn twice.
+ *
+ * <p>The render hook is {@code Screen.renderWithTooltip} rather than {@code Screen.render} on
+ * purpose. Vanilla's {@code renderWithTooltip} calls {@code render} and then draws the pending
+ * tooltip, and on Forge it is the method {@code ForgeHooksClient.drawScreen} wraps with
+ * {@code ScreenEvent.Render.Pre/Post} — so its tail is the last point still inside the vanilla screen
+ * pipeline. Hooking there puts the window above EMI's sidebars, EMI's recipe overlays and tooltips
+ * instead of being painted over by a tooltip. The method is {@code final}; an injection into it is
+ * fine because nothing here overrides it.</p>
+ *
+ * <p>Mouse input is not handled here: those methods are interface defaults, so {@link MouseMixin}
+ * takes them instead. Only keys are routed from this mixin, which {@code Screen} does declare.</p>
  */
 @Mixin(Screen.class)
 public abstract class ScreenMixin {
-	@Inject(method = "render", at = @At("TAIL"))
-	private void nei$render(net.minecraft.client.util.math.MatrixStack matrices, int mouseX, int mouseY,
+	@Inject(method = "renderWithTooltip", at = @At("TAIL"))
+	private void nei$renderOverlay(net.minecraft.client.util.math.MatrixStack matrices, int mouseX, int mouseY,
 			float delta, CallbackInfo ci) {
 		if (!((Object) this instanceof HandledScreen<?>)) {
 			NeiHooks.render(DrawContext.of(matrices), (Screen) (Object) this, mouseX, mouseY, delta);
@@ -31,4 +43,5 @@ public abstract class ScreenMixin {
 			cir.setReturnValue(true);
 		}
 	}
+
 }
