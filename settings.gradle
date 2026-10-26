@@ -7,7 +7,7 @@ pluginManagement {
 	}
 }
 
-rootProject.name = 'nei-fabric'
+rootProject.name = 'MaEMI'
 
 include 'common'
 include 'fabric'

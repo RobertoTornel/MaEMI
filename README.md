@@ -220,13 +220,13 @@ The loader jars are written to:
 
 ## Links
 
-- [Source and issues](https://github.com/RobertoTornel/nei-fabric)
-- [Latest release](https://github.com/RobertoTornel/nei-fabric/releases/latest)
-- [Architecture notes](https://github.com/RobertoTornel/nei-fabric/blob/main/docs/ARCHITECTURE.md)
-- [Tooling and Modrinth upload](https://github.com/RobertoTornel/nei-fabric/blob/main/docs/TOOLING.md)
-- [Credits](https://github.com/RobertoTornel/nei-fabric/blob/main/docs/CREDITS.md)
+- [Source and issues](https://github.com/RobertoTornel/MaEMI)
+- [Latest release](https://github.com/RobertoTornel/MaEMI/releases/latest)
+- [Architecture notes](https://github.com/RobertoTornel/MaEMI/blob/main/docs/ARCHITECTURE.md)
+- [Tooling and Modrinth upload](https://github.com/RobertoTornel/MaEMI/blob/main/docs/TOOLING.md)
+- [Credits](https://github.com/RobertoTornel/MaEMI/blob/main/docs/CREDITS.md)
 
 ## License
 
 MaEMI is licensed under the **GNU Lesser General Public License v3.0 or later**
-(LGPL-3.0-or-later). See [LICENSE](https://github.com/RobertoTornel/nei-fabric/blob/main/LICENSE).
+(LGPL-3.0-or-later). See [LICENSE](https://github.com/RobertoTornel/MaEMI/blob/main/LICENSE).

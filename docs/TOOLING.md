@@ -6,7 +6,7 @@ The repository and all build output live in:
 
 `/home/mana/Documents/mcmod/MaEMI`
 
-The Git remote is `https://github.com/RobertoTornel/nei-fabric` (the repository name predates the
+The Git remote is `https://github.com/RobertoTornel/MaEMI` (the repository name predates the
 MaEMI rename). The default branch is `main`.
 
 ## Tool locations on this machine
