@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2
+
+### Autocrafting & Planner Improvements
+
+- **Cycle & reverse-recipe prevention:** Automatically detects and prunes circular uncrafting, splitting, decompressing, and stripping recipes (e.g. multi-wire splitting, storage blocks to ingots, cable stripping) when the composite input is not already in stock. Prevents spurious requests for downstream items (such as octal wires) when crafting basic components.
+- **Improved failure reporting:** Backtracking now prioritizes the recipe attempt that planned the deepest intermediate steps instead of whichever attempt failed with the fewest missing items. Preserves the primary recipe's missing ingredients on tie, naming the real missing raw materials rather than an uncrafting dead end.
+- **Mod-aware tag candidate sorting:** When resolving tag inputs with multiple modded options, candidate items matching the target recipe's namespace are prioritized over third-party decorative variants (e.g. prioritizing GTCEu blocks over Chipped/Chisel blocks).
+
 ## 1.0.1 - multi-version
 
 ### Supported Minecraft versions
