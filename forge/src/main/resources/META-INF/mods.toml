@@ -8,20 +8,20 @@ modId = "nei"
 version = "${version}"
 displayName = "MaEMI"
 authors = "MaEMI contributors"
-description = "NEI-style autocrafting, tool-aware recipe matching and extra tooltips, bolted onto EMI for Minecraft 1.20."
+description = "NEI-style autocrafting, tool-aware recipe matching and extra tooltips, bolted onto EMI for Minecraft 1.19.4."
 displayTest = "IGNORE_ALL_VERSION"
 
 [[dependencies.nei]]
 modId = "forge"
 mandatory = true
-versionRange = "[46,)"
+versionRange = "[45,)"
 ordering = "NONE"
 side = "CLIENT"
 
 [[dependencies.nei]]
 modId = "minecraft"
 mandatory = true
-versionRange = "[1.20,1.20.1)"
+versionRange = "[1.19.4,1.19.5)"
 ordering = "NONE"
 side = "CLIENT"
 

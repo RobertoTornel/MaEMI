@@ -1,7 +1,7 @@
 package dev.nei.mixin;
 
 import dev.nei.hook.NeiHooks;
-import net.minecraft.client.gui.DrawContext;
+import dev.nei.render.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.screen.ScreenHandler;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,8 +17,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(HandledScreen.class)
 public abstract class HandledScreenMixin {
 	@Inject(method = "render", at = @At("TAIL"))
-	private void nei$render(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-		NeiHooks.render(context, (HandledScreen<?>) (Object) this, mouseX, mouseY, delta);
+	private void nei$render(net.minecraft.client.util.math.MatrixStack matrices, int mouseX, int mouseY,
+			float delta, CallbackInfo ci) {
+		NeiHooks.render(DrawContext.of(matrices), (HandledScreen<?>) (Object) this, mouseX, mouseY, delta);
 	}
 
 	@Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)

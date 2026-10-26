@@ -4,7 +4,7 @@ import org.lwjgl.glfw.GLFW;
 
 import dev.nei.item.ItemSubset;
 import dev.nei.item.ItemSubsetList;
-import net.minecraft.client.gui.DrawContext;
+import dev.nei.render.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -66,8 +66,9 @@ public final class SubsetEditScreen extends Screen {
 	}
 
 	@Override
-	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-		renderBackground(context);
+	public void render(net.minecraft.client.util.math.MatrixStack matrices, int mouseX, int mouseY, float delta) {
+		DrawContext context = DrawContext.of(matrices);
+		renderBackground(matrices);
 		int left = (width - PANEL_WIDTH) / 2;
 		int top = (height - PANEL_HEIGHT) / 2;
 		context.fill(left, top, left + PANEL_WIDTH, top + PANEL_HEIGHT, 0xF0101010);
@@ -78,7 +79,7 @@ public final class SubsetEditScreen extends Screen {
 		if (error != null) {
 			context.drawCenteredTextWithShadow(textRenderer, error, width / 2, top + 80, 0xFF5555);
 		}
-		super.render(context, mouseX, mouseY, delta);
+		super.render(matrices, mouseX, mouseY, delta);
 	}
 
 	@Override

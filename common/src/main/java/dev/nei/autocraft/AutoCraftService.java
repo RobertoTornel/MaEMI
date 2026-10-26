@@ -168,7 +168,8 @@ public final class AutoCraftService {
 		}
 		boolean crafted = false;
 		try {
-			crafted = EmiRecipeFiller.performFill(step.recipe(), screen, dev.emi.emi.api.EmiFillAction.QUICK_MOVE, step.batches());
+			crafted = EmiRecipeFiller.performFill(step.recipe(), screen, EmiCraftContext.Type.CRAFTABLE,
+				EmiCraftContext.Destination.INVENTORY, step.batches());
 		} catch (Throwable t) {
 			Nei.LOG.error("[MaEMI] autocraft step failed", t);
 		}
@@ -360,7 +361,8 @@ public final class AutoCraftService {
 				continue;
 			}
 			try {
-				any |= EmiRecipeFiller.performFill(node.recipe, screen, dev.emi.emi.api.EmiFillAction.QUICK_MOVE, (int) node.neededBatches);
+				any |= EmiRecipeFiller.performFill(node.recipe, screen, EmiCraftContext.Type.CRAFTABLE,
+					EmiCraftContext.Destination.INVENTORY, (int) node.neededBatches);
 			} catch (Throwable t) {
 				Nei.LOG.error("[MaEMI] autocraft tree step failed", t);
 			}

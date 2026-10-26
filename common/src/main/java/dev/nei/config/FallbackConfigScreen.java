@@ -1,6 +1,6 @@
 package dev.nei.config;
 
-import net.minecraft.client.gui.DrawContext;
+import dev.nei.render.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
@@ -24,9 +24,10 @@ public final class FallbackConfigScreen extends Screen {
 	}
 
 	@Override
-	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-		renderBackground(context);
-		super.render(context, mouseX, mouseY, delta);
+	public void render(net.minecraft.client.util.math.MatrixStack matrices, int mouseX, int mouseY, float delta) {
+		DrawContext context = DrawContext.of(matrices);
+		renderBackground(matrices);
+		super.render(matrices, mouseX, mouseY, delta);
 		context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 40, 0xFFFFFF);
 		String path = NeiConfig.file() == null ? "config/nei.json" : NeiConfig.file().toString();
 		context.drawCenteredTextWithShadow(textRenderer, Text.translatable("nei.config.fallback.cloth"), width / 2, 70, 0xFFAAAA);

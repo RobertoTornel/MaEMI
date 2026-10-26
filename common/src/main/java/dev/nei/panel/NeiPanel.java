@@ -4,7 +4,7 @@ import java.util.List;
 
 import dev.emi.emi.api.stack.EmiStack;
 import dev.nei.config.NeiConfig;
-import net.minecraft.client.gui.DrawContext;
+import dev.nei.render.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 
 /**

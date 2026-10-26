@@ -1,7 +1,7 @@
 package dev.nei.hook;
 
 import dev.nei.NeiKeybinds;
-import net.minecraft.client.gui.DrawContext;
+import dev.nei.render.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 
