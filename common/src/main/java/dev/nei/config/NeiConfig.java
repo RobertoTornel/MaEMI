@@ -39,15 +39,15 @@ public final class NeiConfig {
 
 	private static NeiConfigData sanitise(NeiConfigData loaded) {
 		if (loaded.general == null) loaded.general = new NeiConfigData.General();
-		if (loaded.panel == null) loaded.panel = new NeiConfigData.Panel();
 		if (loaded.search == null) loaded.search = new NeiConfigData.Search();
+		if (loaded.calculator == null) loaded.calculator = new NeiConfigData.Calculator();
 		if (loaded.autocraft == null) loaded.autocraft = new NeiConfigData.Autocraft();
 		if (loaded.cheat == null) loaded.cheat = new NeiConfigData.Cheat();
 		if (loaded.tooltip == null) loaded.tooltip = new NeiConfigData.Tooltip();
 		if (loaded.compat == null) loaded.compat = new NeiConfigData.Compat();
 		if (loaded.compat.modules == null) loaded.compat.modules = new java.util.LinkedHashMap<>();
-		loaded.panel.columns = Math.max(4, Math.min(12, loaded.panel.columns));
-		loaded.panel.rows = Math.max(2, Math.min(20, loaded.panel.rows));
+		loaded.calculator.width = Math.max(96, Math.min(320, loaded.calculator.width));
+		loaded.calculator.height = Math.max(40, Math.min(120, loaded.calculator.height));
 		loaded.autocraft.maxDepth = Math.max(1, Math.min(64, loaded.autocraft.maxDepth));
 		loaded.autocraft.maxCrafts = Math.max(1, Math.min(4096, loaded.autocraft.maxCrafts));
 		return loaded;

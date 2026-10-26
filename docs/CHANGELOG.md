@@ -1,5 +1,43 @@
 # Changelog
 
+## 1.0.4
+
+### The search bar is a calculator now
+
+EMI's search box evaluates arithmetic as you type, so a query like
+`((232134/23)*29+2.3)-90000000000000` answers itself instead of searching for an item by that name.
+The value is drawn right-aligned inside the search bar in a dim colour, and the field keeps every
+click and keystroke — the result is displayed, never interactive.
+
+- Big numbers stay readable. The result is computed in `BigDecimal` and printed with grouping
+  separators (`-89,999,999,707,307.004347826087`), not as `-9.0E13`. Scientific notation only
+  appears once a value is genuinely beyond reading.
+- Supported: `+ - * / %`, parentheses, unary minus, decimals and `^` / `**` powers, with the usual
+  precedence. Anything that is not a complete expression — `1/0`, a half-typed `2+`, an item name —
+  simply produces no result. It never throws and never disturbs the search.
+- Hand-written parser, no script engine. This runs on the render thread on every keystroke, so it is
+  bounded in input length, nesting depth and exponent, and it cannot execute code.
+
+### A result window you can move and rename
+
+- New floating window showing the last result. It draws **above EMI's panel and above the player's
+  inventory**, and stays put while the rest of the screen changes underneath it.
+- Drag it by the title bar. Dragging reveals an editable name label, so renaming and moving are the
+  same gesture; the name, position and open state persist.
+- A 13px close button with a hover state and a "Close" tooltip. Closing it hides the window; typing a
+  new expression brings it back.
+
+### Removed: the old item panel
+
+The custom item panel was dead code. It had already stopped rendering, but its classes, config keys
+and keybind were still compiled in and still offered in the config screen, where turning them on did
+nothing. All of it is gone: roughly 1,500 lines across seven classes, the `panel.enabled` switch, the
+panel keybind, and their translations. EMI owns that screen space and always did in practice.
+
+Bookmarks, hidden items and subsets are kept — only the dead UI was removed, so existing configs and
+saved data still load. Old config files containing `panel.enabled` are tolerated and the stale key is
+dropped on the next save.
+
 ## 1.0.3
 
 ### Autocrafting fixes
