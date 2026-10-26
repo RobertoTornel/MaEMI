@@ -76,8 +76,8 @@ public final class SearchBarResult {
 			if (value == null || value.isEmpty()) {
 				return;
 			}
-			int left = search.getX() + INSET;
-			int right = search.getX() + search.getWidth() - INSET;
+			int left = search.x + INSET;
+			int right = search.x + search.getWidth() - INSET;
 			int available = right - left;
 			if (available <= 8) {
 				return;
@@ -96,7 +96,7 @@ public final class SearchBarResult {
 			}
 			int textWidth = textRenderer.getWidth(shown);
 			int x = right - textWidth;
-			int y = search.getY() + (search.getHeight() - 8) / 2;
+			int y = search.y + (search.getHeight() - 8) / 2;
 			// Dim, but bright enough to read on the field's dark background.
 			context.drawText(textRenderer, shown, x, y, 0xFF9AA79A, false);
 		} catch (Throwable ignored) {
