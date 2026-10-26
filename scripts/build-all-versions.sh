@@ -8,11 +8,20 @@
 #        scripts/build-all-versions.sh            # every version below
 #        scripts/build-all-versions.sh 1.20.1     # just one
 set -euo pipefail
+# Git checks files out using the caller's umask. With a restrictive umask (0077) the created
+# worktrees hold 0600 sources, which Gradle's processResources cannot widen when it copies them
+# into the jar ("Could not set file mode 644 ..."). Normalise the umask so a build-all run does
+# not fail on a machine whose shell happens to default to 0077.
+umask 0022
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST="${DIST:-$REPO_ROOT/dist}"
 WORK="${WORK:-$(mktemp -d)}"
 : "${GRADLE_USER_HOME:=$HOME/.gradle}"
+if [ -z "${JAVA_HOME:-}" ] && [ -d "/usr/lib/jvm/java-1.21.0-openjdk-amd64" ]; then
+  export JAVA_HOME="/usr/lib/jvm/java-1.21.0-openjdk-amd64"
+  export PATH="$JAVA_HOME/bin:$PATH"
+fi
 
 # branch:minecraft-version:loaders
 ALL_VERSIONS=(
