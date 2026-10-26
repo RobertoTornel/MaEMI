@@ -38,6 +38,14 @@ Bookmarks, hidden items and subsets are kept — only the dead UI was removed, s
 saved data still load. Old config files containing `panel.enabled` are tolerated and the stale key is
 dropped on the next save.
 
+### Branch notes
+
+- This branch ships against EMI 1.0.3 (`emi_version=1.0.3+1.20`). That EMI has no
+  `EmiScreenManager.updateSearchSidebar`, so the value in the search bar is read from
+  `EmiScreenManager.search.getText()` while the screen draws instead of asking EMI to repeat its
+  search; no EMI-internal search hook is needed and the field still takes every keystroke.
+- Both loaders ship for this Minecraft version: `maemi-fabric-1.0.4.jar` and `maemi-forge-1.0.4.jar`.
+
 ## 1.0.3
 
 ### Autocrafting fixes
