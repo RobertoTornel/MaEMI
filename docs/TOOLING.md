@@ -95,25 +95,46 @@ export MODRINTH_TOKEN='...'
 Never commit either form. The upload script reads `MODRINTH_TOKEN` first, then
 `MODRINTH_TOKEN_FILE` (default `$HOME/.config/maemi/modrinth-token`).
 
+## Building every Minecraft version
+
+Each supported Minecraft version lives on its own branch. `scripts/build-all-versions.sh` checks out
+every branch into a throwaway worktree, builds it, and copies the jars into `dist/<minecraft-version>/`:
+
+```bash
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 \
+GRADLE_USER_HOME=/home/mana/.gradle-nvme \
+  scripts/build-all-versions.sh              # every version
+
+  scripts/build-all-versions.sh 1.20.1       # just one
+```
+
+The worktrees are removed afterwards. `dist/` is git-ignored; it is a staging area for uploads only.
+
 ## Uploading with the script
 
-Build first, then run:
+For the single-version 1.20.1 line:
 
 ```bash
 ./scripts/upload-modrinth.sh 1.0.1
 ```
 
-With no argument it reads `mod_version` from `gradle.properties`.
+With no argument it reads `mod_version` from `gradle.properties`. It uploads the Fabric jar as
+`1.0.1-fabric` and the Forge jar as `1.0.1-forge`.
 
-The script:
+For the full matrix, build into `dist/` first and then publish every jar with the correct
+`game_versions` tag:
 
-1. reads the token without printing it
-2. checks the existing version numbers and skips duplicates
-3. uploads the Fabric jar as `1.0.1-fabric` and the Forge jar as `1.0.1-forge`
-4. adds the dependency ids listed above
-5. submits a project that is still a draft for review
+```bash
+scripts/upload-dist.sh                 # publish everything in dist/
+scripts/upload-dist.sh 1.20.1 1.21.1   # or just these
+scripts/upload-dist.sh --dry-run       # list what would be uploaded
+```
 
-It does not build the jars. Run the Gradle build first.
+`upload-dist.sh` creates one Modrinth version per (Minecraft version, loader) pair, named
+`<mod_version>-<loader>-<minecraft>`, e.g. `1.0.1-fabric-1.19.4`. Both upload scripts read the token
+without printing it and skip version numbers that already exist, so re-running is safe.
+
+Neither script builds anything. Run the Gradle build (or `build-all-versions.sh`) first.
 
 ## Manual API upload
 
