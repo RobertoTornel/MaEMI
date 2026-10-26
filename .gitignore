@@ -22,3 +22,6 @@ remappedSrc/
 
 # OS
 .DS_Store
+
+# Built jars collected for release
+dist/
