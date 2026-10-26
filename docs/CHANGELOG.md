@@ -27,7 +27,9 @@ That is every Minecraft version EMI itself has a build for.
 - Minecraft 1.19.x has no `DrawContext`; the panel draws through a small `dev.nei.render.DrawContext`
   shim over the version's own `MatrixStack` helpers, so the renderer is written once.
 - Minecraft 1.20.5+ replaced item NBT with data components; those branches read
-  `DataComponentTypes.CUSTOM_DATA` instead of `ItemStack#getNbt`.
+  `DataComponentTypes.CUSTOM_DATA` instead of `ItemStack#getNbt()`.
+- Minecraft 1.18.2 is EMI 0.7.3, which is Fabric-only and predates the modern EMI API. That branch
+  ships Fabric only and reads EMI's legacy `EmiRecipes` index; see the version notes for details.
 - Screen rendering, tooltip construction and the EMI autocraft entry point changed signature several
   times across these versions; each branch carries the call that its own EMI and Minecraft expect.
 

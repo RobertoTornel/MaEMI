@@ -164,7 +164,7 @@ for the full matrix and branch layout.
 | EMI | The build for your Minecraft version | Required; nothing works without it |
 | Fabric Loader | 0.15.0 or newer | Fabric jars |
 | Fabric API | Matching your Minecraft version | Fabric jars |
-| Forge | 40.x – 48.x | Forge jars, Minecraft 1.18.2 – 1.20.2 only |
+| Forge | 43.x – 48.x | Forge jars, Minecraft 1.19.2 – 1.20.2 only |
 
 EMI is the only mod MaEMI cannot run without. MaEMI is client-side; installing it on a dedicated
 server does nothing useful.

@@ -8,7 +8,7 @@ source changes that version needs.
 
 | Minecraft | Fabric | Forge | Branch | What changed for this version |
 | --- | --- | --- | --- | --- |
-| 1.18.2 | yes | — | `1.18.2` | Oldest EMI line; reduced integration surface |
+| 1.18.2 | yes | — | `1.18.2` | Oldest EMI line (EMI 0.7.3 is Fabric-only) |
 | 1.19.2 | yes | yes | `1.19.2` | `MatrixStack` draw shim |
 | 1.19.3 | yes | yes | `1.19.3` | `MatrixStack` draw shim |
 | 1.19.4 | yes | yes | `1.19.4` | `MatrixStack` draw shim |
@@ -47,8 +47,31 @@ Three APIs moved underneath the code across this range, and those are the only s
      `performFill(recipe, screen, EmiCraftContext.Type, EmiCraftContext.Destination, amount)` in 1.1.x.
    - `EmiRegistry#addAlias` is not present in every EMI build; where it is missing the call is made
      reflectively and simply does nothing.
-   - EMI 0.7.x (1.18.2) lacks several of the registry hooks the modern code assumes; that branch
-     keeps the integrations that build and drops the rest.
+
+## The 1.18.2 branch is different
+
+Minecraft 1.18.2 is the oldest version EMI supports, and EMI 0.7.3 is a very different library from
+1.1.x, so this branch carries more divergence than any other:
+
+- **EMI 0.7.3 is Fabric/Quilt-only.** There is no `emi-forge` artifact for 1.18.2 at all, so the
+  Forge module cannot resolve its dependency and the branch ships **Fabric only**. The Forge source
+  is still present and its metadata is updated, ready for a loader EMI never published for.
+- **EMI 0.7.3 is not on EMI's own Maven.** `common` and `fabric` pull it from
+  `maven.modrinth:emi` instead of `dev.emi:emi-fabric`.
+- **No public recipe-index API.** `EmiApi.getRecipeManager()` does not exist; the recipe index is read
+  from EMI's `EmiRecipes` class. This is the only non-public EMI surface MaEMI touches, and it is
+  confined to the recipe registry, the workstation lookup and the dump service.
+- **Autocrafting still works.** `EmiRecipeFiller` lives in `dev.emi.emi` and takes the 4-argument
+  `performFill(recipe, screen, EmiFillAction, amount)`; click-to-craft is wired to that, not disabled.
+- **Minecraft 1.18.2 has no `Text` factory methods.** `Text.translatable` / `Text.literal` become
+  `new TranslatableText` / `new LiteralText`.
+- **Registries had not moved yet.** `net.minecraft.registry.Registries` becomes
+  `net.minecraft.util.registry.Registry`, and `Registry#getEntry` does not exist.
+- **No widget builder.** `ButtonWidget.builder(...).dimensions(...)` becomes the constructor form.
+- **No `sendCommand` on the network handler.** Commands go through `client.player.sendCommand`.
+
+Everything else — autocraft planner, tool-aware matching, tooltips, hidden-item panel, dumps — behaves
+as it does on the newer branches.
 
 ## Building every version
 
