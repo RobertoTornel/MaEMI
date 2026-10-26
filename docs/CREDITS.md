@@ -2,7 +2,7 @@
 
 ## This port
 
-* Implementation and integration: the MaEMI-Fabric contributors.
+* Implementation and integration: the MaEMI contributors.
 * Architecture: Architectury multiloader (common/fabric/forge).
 
 ## Upstream projects

@@ -6,7 +6,7 @@
 | --- | --- | --- | --- |
 | 1.20.1 | yes | yes | Full supported version; current release |
 | 1.20.2 | no | no | Compiles only after Java changes |
-| 1.20.4 | no | no | Same screen API change, plus newer loader APIs |
+| 1.20.4 | no | no | 1.20.2 already requires Java changes; not attempted |
 | 1.20.5+ | no | no | Item NBT was replaced by data components |
 | 1.21.x | no | no | NeoForge/EMI and item component changes |
 

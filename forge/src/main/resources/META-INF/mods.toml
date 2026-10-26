@@ -7,7 +7,7 @@ issueTrackerURL = "https://github.com/RobertoTornel/MaEMI/issues"
 modId = "nei"
 version = "${version}"
 displayName = "MaEMI"
-authors = "MaEMI-Fabric contributors"
+authors = "MaEMI contributors"
 description = "NEI-style autocrafting, tool-aware recipe matching and extra tooltips, bolted onto EMI for Minecraft 1.20.1."
 displayTest = "IGNORE_ALL_VERSION"
 
