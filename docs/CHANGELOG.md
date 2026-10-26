@@ -38,6 +38,23 @@ Bookmarks, hidden items and subsets are kept — only the dead UI was removed, s
 saved data still load. Old config files containing `panel.enabled` are tolerated and the stale key is
 dropped on the next save.
 
+### Port notes: Minecraft 1.20.6
+
+- Fabric only. This branch builds `common` + `fabric` (`enabled_platforms=fabric`); the leftover
+  `forge/` sources are not part of `settings.gradle` and no Forge or NeoForge artifact is produced.
+- Minecraft 1.20.5+ stores item data in components instead of NBT. This release reads none of it:
+  `ItemIndex` copies EMI's stack list and the overlay only handles strings, so the panel removal
+  left the branch's component code untouched — `StackIO` and `DumpService` go through
+  `ComponentChanges`, and `ToolIdentity` and `TooltipLines` read
+  `DataComponentTypes.CUSTOM_DATA`.
+- The overlay hooks `Screen#renderWithTooltip` and `HandledScreen#render`; the mixin refmap resolves
+  them to `method_47413` and `method_25394` in the 1.20.6 intermediary mappings, so the injection
+  points carried over unchanged.
+- Nothing overrides EMI's search widget: the value is read from
+  `EmiScreenManager.search.getText()` at render time, so the `render`/`renderWidget` split does not
+  apply to this release.
+- Built with Java 21, which this branch requires (`fabric.mod.json`).
+
 ## 1.0.3
 
 ### Autocrafting fixes
