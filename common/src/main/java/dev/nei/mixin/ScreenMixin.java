@@ -15,20 +15,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * are handled by {@link HandledScreenMixin}, which hooks the point after the item grid; the
  * {@code instanceof} guard here is what keeps a single screen from being drawn twice.
  *
- * <p>The render hook is {@code Screen.renderWithTooltip} rather than {@code Screen.render} on
- * purpose. Vanilla's {@code renderWithTooltip} calls {@code render} and then draws the pending
- * tooltip, and on Forge it is the method {@code ForgeHooksClient.drawScreen} wraps with
- * {@code ScreenEvent.Render.Pre/Post} — so its tail is the last point still inside the vanilla screen
- * pipeline. Hooking there puts the window above EMI's sidebars, EMI's recipe overlays and tooltips
- * instead of being painted over by a tooltip. The method is {@code final}; an injection into it is
- * fine because nothing here overrides it.</p>
+ * <p>The render hook is {@code Screen.render} because 1.18.2 has no {@code renderWithTooltip}: the
+ * tooltip pass lives in the screen manager instead. The tail of {@code render} is therefore the last
+ * point this version offers inside the screen's own drawing, which is where the window has to be
+ * painted so it lands above EMI's panel and above the player inventory.</p>
  *
  * <p>Mouse input is not handled here: those methods are interface defaults, so {@link MouseMixin}
  * takes them instead. Only keys are routed from this mixin, which {@code Screen} does declare.</p>
  */
 @Mixin(Screen.class)
 public abstract class ScreenMixin {
-	@Inject(method = "renderWithTooltip", at = @At("TAIL"))
+	@Inject(method = "render", at = @At("TAIL"))
 	private void nei$renderOverlay(net.minecraft.client.util.math.MatrixStack matrices, int mouseX, int mouseY,
 			float delta, CallbackInfo ci) {
 		if (!((Object) this instanceof HandledScreen<?>)) {
