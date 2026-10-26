@@ -38,6 +38,22 @@ Bookmarks, hidden items and subsets are kept — only the dead UI was removed, s
 saved data still load. Old config files containing `panel.enabled` are tolerated and the stale key is
 dropped on the next save.
 
+### Port notes: Minecraft 1.20.4
+
+- Fabric only. This branch builds `common` + `fabric` (`enabled_platforms=fabric`); the leftover
+  `forge/` sources are not part of `settings.gradle` and no Forge artifact is produced.
+- The overlay hooks `Screen#renderWithTooltip` and `HandledScreen#render`. Both exist on 1.20.4 and
+  the mixin refmap resolves them to `method_47413` and `method_25394`, so the injection points
+  carried over unchanged.
+- Nothing overrides EMI's search widget: the value is read from
+  `EmiScreenManager.search.getText()` at render time, so the `render`/`renderWidget` split does not
+  apply to this release.
+- Item data is still NBT on 1.20.4 (`ItemStack#getNbt()` is present), unlike 1.20.5+. Nothing in
+  this release reads item data — `ItemIndex` only copies EMI's stack list — so the panel removal
+  moved no data code and `StackIO`, `ToolIdentity` and `TooltipLines` keep their NBT paths.
+- The deleted `SubsetEditScreen` was one of the branch's three `renderBackground(DrawContext, int,
+  int, float)` callers; `UtilityScreen` and `FallbackConfigScreen` keep that call.
+
 ## 1.0.3
 
 ### Autocrafting fixes
