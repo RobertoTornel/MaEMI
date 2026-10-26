@@ -38,6 +38,15 @@ Bookmarks, hidden items and subsets are kept — only the dead UI was removed, s
 saved data still load. Old config files containing `panel.enabled` are tolerated and the stale key is
 dropped on the next save.
 
+### Notes on 1.19.2
+
+The calculator window draws from `Screen.render`'s tail on this branch. 1.19.2 has no
+`Screen.renderWithTooltip` — that method first appears in 1.19.3 — so on non-container screens the
+window is drawn at the end of the screen's own rendering, and a tooltip the game draws after the
+screen returns can overlap it. Container screens are unaffected: their window is drawn from
+`HandledScreen.render`'s tail. The search-field geometry is read through a small `ClickableWidget`
+accessor mixin because `ClickableWidget.getX()`/`getY()` only arrived in 1.19.3.
+
 ## 1.0.3
 
 ### Autocrafting fixes

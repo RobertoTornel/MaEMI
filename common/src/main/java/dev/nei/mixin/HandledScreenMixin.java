@@ -3,6 +3,7 @@ package dev.nei.mixin;
 import dev.nei.hook.NeiHooks;
 import dev.nei.render.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.util.math.MatrixStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -10,8 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Draws the calculator overlay after a container screen has finished drawing, and routes the clicks
- * and keys that belong to it.
+ * Draws the calculator overlay after a container screen has finished drawing, and routes the keys
+ * that belong to it.
  *
  * <p>Mouse input is not handled here: {@code HandledScreen.mouseClicked} exists but its position is
  * raw pixels and EMI already hooks it, so {@link MouseMixin} owns all pointer input uniformly. Keys
@@ -28,8 +29,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(HandledScreen.class)
 public abstract class HandledScreenMixin {
 	@Inject(method = "render", at = @At("TAIL"))
-	private void nei$render(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-		NeiHooks.renderHandled(context, (HandledScreen<?>) (Object) this, mouseX, mouseY);
+	private void nei$render(MatrixStack matrices, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+		NeiHooks.renderHandled(DrawContext.of(matrices), (HandledScreen<?>) (Object) this, mouseX, mouseY);
 	}
 
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
