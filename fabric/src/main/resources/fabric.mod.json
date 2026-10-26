@@ -3,7 +3,7 @@
 	"id": "nei",
 	"version": "${version}",
 	"name": "MaEMI (Fabric)",
-	"description": "NEI-style autocrafting, tool-aware recipe matching and extra tooltips, bolted onto EMI for Minecraft 1.21.1.",
+	"description": "NEI-style autocrafting, tool-aware recipe matching and extra tooltips, bolted onto EMI for Minecraft 1.20.6.",
 	"authors": ["MaEMI contributors"],
 	"license": "LGPL-3.0-or-later",
 	"environment": "client",
@@ -15,7 +15,7 @@
 	"mixins": ["nei.mixins.json"],
 	"depends": {
 		"fabricloader": ">=0.15.0",
-		"minecraft": "~1.21.1",
+		"minecraft": "~1.20.6",
 		"java": ">=21",
 		"fabric-api": "*",
 		"emi": ">=1.1.20"
