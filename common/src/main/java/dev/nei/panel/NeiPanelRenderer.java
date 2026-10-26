@@ -45,7 +45,7 @@ public final class NeiPanelRenderer {
 		drawHelp(context, textRenderer, layout, mouseX, mouseY);
 
 		if (layout.helpInside(mouseX, mouseY)) {
-			context.drawTooltip(textRenderer, List.of(Text.translatable("nei.panel.help")), mouseX, mouseY);
+			context.drawTooltip(textRenderer, List.of(new net.minecraft.text.TranslatableText("nei.panel.help")), mouseX, mouseY);
 		}
 		drawStatus(context, textRenderer, layout, state);
 		drawHoveredTooltip(context, textRenderer, layout, stacks, mouseX, mouseY);
@@ -109,7 +109,7 @@ public final class NeiPanelRenderer {
 	private static void drawItems(DrawContext context, MinecraftClient client, TextRenderer textRenderer,
 			NeiPanelLayout layout, NeiPanelState state, List<EmiStack> stacks, int mouseX, int mouseY) {
 		if (stacks == null || stacks.isEmpty()) {
-			String message = Text.translatable("nei.panel.empty").getString();
+			String message = new net.minecraft.text.TranslatableText("nei.panel.empty").getString();
 			int width = textRenderer.getWidth(message);
 			context.drawText(textRenderer, message,
 					layout.gridX + (layout.columns * NeiPanelLayout.SLOT - width) / 2,
@@ -170,7 +170,7 @@ public final class NeiPanelRenderer {
 		int textX = layout.searchX + 3;
 		int textY = layout.searchY + 3;
 		if (query.isEmpty()) {
-			context.drawText(textRenderer, Text.translatable("nei.panel.search").getString(),
+			context.drawText(textRenderer, new net.minecraft.text.TranslatableText("nei.panel.search").getString(),
 					textX, textY, TEXT_DIM, false);
 		} else {
 			context.drawText(textRenderer, query, textX, textY, TEXT, false);
@@ -207,7 +207,7 @@ public final class NeiPanelRenderer {
 					tab.x + (tab.width - textWidth) / 2, tab.y + 3, active ? TEXT : TEXT_DIM, false);
 		}
 		if (hoveredTitle != null) {
-			context.drawTooltip(textRenderer, List.of(Text.literal(hoveredTitle)), mouseX, mouseY);
+			context.drawTooltip(textRenderer, List.of(new net.minecraft.text.LiteralText(hoveredTitle)), mouseX, mouseY);
 		}
 	}
 

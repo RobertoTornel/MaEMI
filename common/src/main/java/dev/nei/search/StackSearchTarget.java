@@ -6,8 +6,7 @@ import java.util.List;
 import dev.emi.emi.api.stack.EmiStack;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -72,8 +71,7 @@ public final class StackSearchTarget implements SearchTarget {
 			tags = new ArrayList<>();
 			ItemStack item = stack.getItemStack();
 			if (item != null && !item.isEmpty() && MinecraftClient.getInstance().world != null) {
-				RegistryEntry<net.minecraft.item.Item> entry = Registries.ITEM.getEntry(item.getItem());
-				entry.streamTags().forEach(tag -> tags.add(tag.id().toString()));
+				item.streamTags().forEach(tag -> tags.add(tag.id().toString()));
 			}
 		}
 		return tags;

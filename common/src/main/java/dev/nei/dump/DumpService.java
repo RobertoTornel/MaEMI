@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.gson.JsonElement;
 
+import dev.emi.emi.EmiRecipes;
 import dev.emi.emi.api.EmiApi;
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.stack.EmiIngredient;
@@ -24,7 +25,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -136,7 +137,8 @@ public final class DumpService {
 		writeAtomic(target, writer -> {
 			writer.write("# MaEMI recipe dump: recipe id, category, inputs, outputs");
 			writer.newLine();
-			for (EmiRecipe recipe : EmiApi.getRecipeManager().getRecipes()) {
+			List<EmiRecipe> recipes = EmiRecipes.recipes == null ? List.of() : EmiRecipes.recipes;
+			for (EmiRecipe recipe : recipes) {
 				if (recipe == null) {
 					continue;
 				}
@@ -155,7 +157,7 @@ public final class DumpService {
 			writer.write("# MaEMI tag dump: item id, item tags");
 			writer.newLine();
 			List<String> rows = new ArrayList<>();
-			for (Item item : Registries.ITEM) {
+			for (Item item : Registry.ITEM) {
 				if (item == null) {
 					continue;
 				}
@@ -163,7 +165,7 @@ public final class DumpService {
 				if (stack == null || stack.isEmpty()) {
 					continue;
 				}
-				Identifier id = Registries.ITEM.getId(item);
+				Identifier id = Registry.ITEM.getId(item);
 				List<String> tags;
 				try {
 					tags = stack.streamTags().map(tag -> tag.id().toString()).sorted().toList();
@@ -235,7 +237,7 @@ public final class DumpService {
 			client.execute(() -> {
 				ClientPlayerEntity player = client.player;
 				if (player != null) {
-					player.sendMessage(Text.translatable(key, args), false);
+					player.sendMessage(new net.minecraft.text.TranslatableText(key, args), false);
 				}
 			});
 		} catch (Throwable t) {

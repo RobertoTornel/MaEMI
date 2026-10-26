@@ -157,7 +157,7 @@ public final class NeiPanelLayout {
 		int totalRows = totalItems <= 0 ? 0 : (totalItems + columns - 1) / columns;
 		int pages = Math.max(1, (totalRows + rows - 1) / rows);
 		int visiblePage = Math.min(pages, (state == null ? 0 : state.scrollRow()) / rows + 1);
-		this.pageLabel = Text.translatable("nei.panel.page", visiblePage, pages).getString();
+		this.pageLabel = new net.minecraft.text.TranslatableText("nei.panel.page", visiblePage, pages).getString();
 		this.pageWidth = width(textRenderer, pageLabel);
 
 		if (showTabs) {
@@ -187,10 +187,10 @@ public final class NeiPanelLayout {
 		int rightLimit = pageX - 4;
 		int x = panelX + PADDING;
 
-		String nei = Text.translatable("nei.panel.nei").getString();
+		String nei = new net.minecraft.text.TranslatableText("nei.panel.nei").getString();
 		x = appendTab(result, nei, nei, null, textRenderer, x, y, height, rightLimit);
 		// The star keeps the bookmarks tab available even when the panel is too narrow for its name.
-		String bookmarks = Text.translatable("nei.panel.bookmarks").getString();
+		String bookmarks = new net.minecraft.text.TranslatableText("nei.panel.bookmarks").getString();
 		x = appendTab(result, "*", bookmarks, NeiPanelState.BOOKMARKS, textRenderer, x, y, height, rightLimit);
 
 		try {

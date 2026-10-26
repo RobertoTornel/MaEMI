@@ -15,7 +15,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -87,7 +87,7 @@ public final class Cheats {
 		if (!client.player.hasPermissionLevel(2)) {
 			return false;
 		}
-		Identifier id = Registries.ITEM.getId(copy.getItem());
+		Identifier id = Registry.ITEM.getId(copy.getItem());
 		if (id == null) {
 			return false;
 		}
@@ -148,7 +148,7 @@ public final class Cheats {
 		if (held == null || held.isEmpty()) {
 			return false;
 		}
-		Identifier id = Registries.ITEM.getId(held.getItem());
+		Identifier id = Registry.ITEM.getId(held.getItem());
 		return id != null && send("clear @s " + id + " 1");
 	}
 
@@ -207,7 +207,7 @@ public final class Cheats {
 		if (held == null || held.isEmpty()) {
 			return;
 		}
-		Identifier id = Registries.ITEM.getId(held.getItem());
+		Identifier id = Registry.ITEM.getId(held.getItem());
 		if (id == null) {
 			return;
 		}
@@ -246,13 +246,13 @@ public final class Cheats {
 	/** The utility buttons rendered by the panel, in display order. */
 	public static List<CheatAction> actions() {
 		List<CheatAction> actions = new ArrayList<>();
-		actions.add(new CheatAction("heal", Text.translatable("nei.utility.heal"), true, screen -> heal()));
-		actions.add(new CheatAction("time", Text.translatable("nei.utility.time"), true, screen -> setTime(nextTime())));
-		actions.add(new CheatAction("weather", Text.translatable("nei.utility.weather"), true, screen -> setWeather(nextWeather())));
-		actions.add(new CheatAction("gamemode", Text.translatable("nei.utility.gamemode"), true, screen -> setGamemode(nextGamemode())));
-		actions.add(new CheatAction("trash", Text.translatable("nei.utility.trash"), true, screen -> deleteHovered()));
-		actions.add(new CheatAction("enchant", Text.translatable("nei.cheat.enchant"), true, screen -> enchantHeld()));
-		actions.add(new CheatAction("spawn_mob", Text.translatable("nei.cheat.spawn_mob"), true, screen -> spawnMob("minecraft:pig")));
+		actions.add(new CheatAction("heal", new net.minecraft.text.TranslatableText("nei.utility.heal"), true, screen -> heal()));
+		actions.add(new CheatAction("time", new net.minecraft.text.TranslatableText("nei.utility.time"), true, screen -> setTime(nextTime())));
+		actions.add(new CheatAction("weather", new net.minecraft.text.TranslatableText("nei.utility.weather"), true, screen -> setWeather(nextWeather())));
+		actions.add(new CheatAction("gamemode", new net.minecraft.text.TranslatableText("nei.utility.gamemode"), true, screen -> setGamemode(nextGamemode())));
+		actions.add(new CheatAction("trash", new net.minecraft.text.TranslatableText("nei.utility.trash"), true, screen -> deleteHovered()));
+		actions.add(new CheatAction("enchant", new net.minecraft.text.TranslatableText("nei.cheat.enchant"), true, screen -> enchantHeld()));
+		actions.add(new CheatAction("spawn_mob", new net.minecraft.text.TranslatableText("nei.cheat.spawn_mob"), true, screen -> spawnMob("minecraft:pig")));
 		return List.copyOf(actions);
 	}
 

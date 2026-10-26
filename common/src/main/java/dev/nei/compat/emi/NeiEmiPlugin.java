@@ -1,6 +1,5 @@
 package dev.nei.compat.emi;
 
-import dev.emi.emi.api.EmiEntrypoint;
 import dev.emi.emi.api.EmiPlugin;
 import dev.emi.emi.api.EmiRegistry;
 import dev.nei.Nei;
@@ -11,14 +10,13 @@ import dev.nei.util.ToolIdentity;
 import dev.emi.emi.api.stack.Comparison;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.util.registry.Registry;
 
 /**
  * EMI entrypoint. EMI owns recipe indexing; MaEMI contributes its plugins and compatibility modules
- * on top. {@code @EmiEntrypoint} is what Forge's scanner looks for; Fabric finds the class through
- * the {@code emi} entrypoint in fabric.mod.json.
+ * on top. EMI 0.7.x has no {@code @EmiEntrypoint} annotation; the class is found through the
+ * {@code emi} entrypoint in fabric.mod.json.
  */
-@EmiEntrypoint
 public class NeiEmiPlugin implements EmiPlugin {
 	@Override
 	public void register(EmiRegistry registry) {
@@ -58,7 +56,7 @@ public class NeiEmiPlugin implements EmiPlugin {
 	 */
 	private static void installToolComparisons(EmiRegistry registry) {
 		int count = 0;
-		for (Item item : Registries.ITEM) {
+		for (Item item : Registry.ITEM) {
 			if (ToolIdentity.isToolItem(item)) {
 				registry.setDefaultComparison(item, old -> Comparison.DEFAULT_COMPARISON);
 				count++;

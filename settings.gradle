@@ -11,4 +11,3 @@ rootProject.name = 'MaEMI'
 
 include 'common'
 include 'fabric'
-include 'forge'

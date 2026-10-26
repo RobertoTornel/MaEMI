@@ -26,6 +26,6 @@ public final class Messages {
 	}
 
 	public static void status(String key, Object... args) {
-		status(Text.translatable(key, args));
+		status(new net.minecraft.text.TranslatableText(key, args));
 	}
 }

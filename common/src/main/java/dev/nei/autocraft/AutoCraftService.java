@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.List;
 
 import dev.emi.emi.api.EmiApi;
+import dev.emi.emi.api.EmiFillAction;
 import dev.emi.emi.api.recipe.EmiPlayerInventory;
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.recipe.handler.EmiCraftContext;
@@ -12,7 +13,7 @@ import dev.emi.emi.api.recipe.handler.StandardRecipeHandler;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.bom.BoM;
 import dev.emi.emi.bom.MaterialNode;
-import dev.emi.emi.registry.EmiRecipeFiller;
+import dev.emi.emi.EmiRecipeFiller;
 import dev.nei.Nei;
 import dev.nei.util.StackIO;
 import dev.nei.util.HoveredStack;
@@ -60,7 +61,7 @@ public final class AutoCraftService {
 		EmiStack hovered = HoveredStack.get();
 		Nei.LOG.info("[MaEMI] autocraft key: hovered={}", hovered.isEmpty() ? "none" : dev.nei.util.StackIO.key(hovered));
 		if (hovered.isEmpty()) {
-			message(Text.translatable("nei.autocraft.nothing"));
+			message(new net.minecraft.text.TranslatableText("nei.autocraft.nothing"));
 			return;
 		}
 		requestCraft(hovered, amount);
@@ -81,11 +82,11 @@ public final class AutoCraftService {
 			recipes.stream().filter(fillable).count(),
 			screen == null ? "no screen" : screen.getClass().getSimpleName());
 		if (recipes.isEmpty()) {
-			message(Text.translatable("nei.autocraft.no_recipe"));
+			message(new net.minecraft.text.TranslatableText("nei.autocraft.no_recipe"));
 			return;
 		}
 		if (recipes.stream().noneMatch(fillable)) {
-			message(Text.translatable("nei.autocraft.wrong_screen"));
+			message(new net.minecraft.text.TranslatableText("nei.autocraft.wrong_screen"));
 			return;
 		}
 		java.util.Map<String, Long> stock = CraftPlanner.stockForScreen(screen, recipes);
@@ -107,10 +108,10 @@ public final class AutoCraftService {
 			// actually be used here; that is not a missing ingredient, so say what it really is.
 			String targetId = target.getId() == null ? "" : target.getId().toString();
 			if (candidate.missing().size() == 1 && candidate.missing().get(0).equals(targetId)) {
-				message(Text.translatable("nei.autocraft.no_recipe"));
+				message(new net.minecraft.text.TranslatableText("nei.autocraft.no_recipe"));
 				return;
 			}
-			message(Text.translatable("nei.autocraft.missing", String.join(", ", candidate.missing())));
+			message(new net.minecraft.text.TranslatableText("nei.autocraft.missing", String.join(", ", candidate.missing())));
 			return;
 		}
 		if (candidate.isEmpty()) {
@@ -126,7 +127,7 @@ public final class AutoCraftService {
 		stepIndex = 0;
 		delay = 2;
 		failures = 0;
-		message(Text.translatable("nei.autocraft.start", candidate.steps().size()));
+		message(new net.minecraft.text.TranslatableText("nei.autocraft.start", candidate.steps().size()));
 		if (!(client.currentScreen instanceof HandledScreen)) {
 			client.setScreen(new InventoryScreen(client.player));
 		}
@@ -168,8 +169,9 @@ public final class AutoCraftService {
 		}
 		boolean crafted = false;
 		try {
-			crafted = EmiRecipeFiller.performFill(step.recipe(), screen, EmiCraftContext.Type.CRAFTABLE,
-				EmiCraftContext.Destination.INVENTORY, step.batches());
+			// 0.7.x has no handler/type/destination overload: performFill picks the handler, the
+			// craftable check and the inventory destination itself.
+			crafted = EmiRecipeFiller.performFill(step.recipe(), screen, EmiFillAction.FILL, step.batches());
 		} catch (Throwable t) {
 			Nei.LOG.error("[MaEMI] autocraft step failed", t);
 		}
@@ -261,7 +263,7 @@ public final class AutoCraftService {
 		failures++;
 		delay = 4;
 		if (failures >= MAX_FILL_FAILURES) {
-			message(Text.translatable("nei.autocraft.stuck", stepIndex + 1));
+			message(new net.minecraft.text.TranslatableText("nei.autocraft.stuck", stepIndex + 1));
 			cancel();
 		}
 	}
@@ -269,7 +271,7 @@ public final class AutoCraftService {
 	private static void finish() {
 		returnCraftingItems();
 		resetAe2();
-		message(Text.translatable("nei.autocraft.done", plan.steps().size()));
+		message(new net.minecraft.text.TranslatableText("nei.autocraft.done", plan.steps().size()));
 		plan = null;
 		failures = 0;
 	}
@@ -361,14 +363,13 @@ public final class AutoCraftService {
 				continue;
 			}
 			try {
-				any |= EmiRecipeFiller.performFill(node.recipe, screen, EmiCraftContext.Type.CRAFTABLE,
-					EmiCraftContext.Destination.INVENTORY, (int) node.neededBatches);
+				any |= EmiRecipeFiller.performFill(node.recipe, screen, EmiFillAction.FILL, (int) node.neededBatches);
 			} catch (Throwable t) {
 				Nei.LOG.error("[MaEMI] autocraft tree step failed", t);
 			}
 		}
 		if (!any) {
-			message(Text.translatable("nei.autocraft.tree_failed"));
+			message(new net.minecraft.text.TranslatableText("nei.autocraft.tree_failed"));
 		}
 		return any;
 	}

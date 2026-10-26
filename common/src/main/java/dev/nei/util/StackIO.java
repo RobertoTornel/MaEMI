@@ -8,7 +8,7 @@ import com.google.gson.JsonElement;
 
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
-import dev.emi.emi.api.stack.serializer.EmiIngredientSerializer;
+import dev.emi.emi.EmiStackSerializer;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
@@ -24,7 +24,7 @@ public final class StackIO {
 			return null;
 		}
 		try {
-			return EmiIngredientSerializer.getSerialized(stack);
+			return EmiStackSerializer.serialize(stack);
 		} catch (Throwable t) {
 			return null;
 		}
@@ -35,7 +35,7 @@ public final class StackIO {
 			return EmiStack.EMPTY;
 		}
 		try {
-			EmiIngredient ingredient = EmiIngredientSerializer.getDeserialized(element);
+			EmiIngredient ingredient = EmiStackSerializer.deserialize(element);
 			if (ingredient instanceof EmiStack stack) {
 				return stack;
 			}

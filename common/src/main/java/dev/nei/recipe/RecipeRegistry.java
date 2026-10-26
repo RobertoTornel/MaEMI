@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import dev.emi.emi.EmiRecipes;
 import dev.emi.emi.api.EmiApi;
 import dev.emi.emi.api.EmiRegistry;
 import dev.emi.emi.api.recipe.EmiRecipe;
@@ -36,7 +37,7 @@ public final class RecipeRegistry {
 	}
 
 	private static Map<Identifier, List<EmiRecipe>> toolOutputIndex() {
-		List<EmiRecipe> all = EmiApi.getRecipeManager().getRecipes();
+		List<EmiRecipe> all = allRecipes();
 		if (all == toolIndexSource) {
 			return toolOutputIndex;
 		}
@@ -88,11 +89,7 @@ public final class RecipeRegistry {
 			return Collections.emptyList();
 		}
 		try {
-			List<EmiRecipe> recipes = EmiApi.getRecipeManager().getRecipesByOutput(stack);
-			if (recipes == null) {
-				Nei.LOG.warn("[MaEMI] EMI returned a null recipe list for {}", stack);
-				return Collections.emptyList();
-			}
+			List<EmiRecipe> recipes = lookup(EmiRecipes.byOutput, stack, true);
 			if (!recipes.isEmpty() || !ToolIdentity.isTool(stack)) {
 				return recipes;
 			}
@@ -111,7 +108,7 @@ public final class RecipeRegistry {
 			return Collections.emptyList();
 		}
 		try {
-			return EmiApi.getRecipeManager().getRecipesByInput(stack);
+			return lookup(EmiRecipes.byInput, stack, false);
 		} catch (Throwable t) {
 			return Collections.emptyList();
 		}
@@ -119,7 +116,10 @@ public final class RecipeRegistry {
 
 	public static List<EmiRecipe> byCategory(EmiRecipeCategory category) {
 		try {
-			return EmiApi.getRecipeManager().getRecipes(category);
+			if (category == null || EmiRecipes.byCategory == null) {
+				return Collections.emptyList();
+			}
+			return EmiRecipes.byCategory.getOrDefault(category, Collections.emptyList());
 		} catch (Throwable t) {
 			return Collections.emptyList();
 		}
@@ -158,8 +158,16 @@ public final class RecipeRegistry {
 			return result;
 		}
 		try {
-			for (EmiRecipeCategory category : EmiApi.getRecipeManager().getCategories()) {
-				for (EmiIngredient station : EmiApi.getRecipeManager().getWorkstations(category)) {
+			List<EmiRecipeCategory> categories = EmiRecipes.categories;
+			if (categories == null || EmiRecipes.workstations == null) {
+				return result;
+			}
+			for (EmiRecipeCategory category : categories) {
+				List<EmiIngredient> stations = EmiRecipes.workstations.get(category);
+				if (stations == null) {
+					continue;
+				}
+				for (EmiIngredient station : stations) {
 					for (EmiStack candidate : station.getEmiStacks()) {
 						if (candidate.isEqual(stack)) {
 							result.add(category);
@@ -172,5 +180,62 @@ public final class RecipeRegistry {
 			Nei.LOG.debug("[MaEMI] workstation lookup failed", t);
 		}
 		return result;
+	}
+
+	private static List<EmiRecipe> allRecipes() {
+		List<EmiRecipe> all = EmiRecipes.recipes;
+		return all == null ? Collections.emptyList() : all;
+	}
+
+	/** 0.7.x keeps the same lookup maps EMI uses internally, keyed by {@link EmiStack#getKey()}. */
+	private static List<EmiRecipe> lookup(Map<Object, List<EmiRecipe>> index, EmiStack stack, boolean outputs) {
+		if (index == null) {
+			return Collections.emptyList();
+		}
+		Object key = stack.getKey();
+		if (key == null) {
+			return Collections.emptyList();
+		}
+		List<EmiRecipe> candidates = index.get(key);
+		if (candidates == null || candidates.isEmpty()) {
+			return Collections.emptyList();
+		}
+		List<EmiRecipe> matches = new ArrayList<>();
+		for (EmiRecipe recipe : candidates) {
+			if (recipe == null) {
+				continue;
+			}
+			if (outputs ? hasOutput(recipe, stack) : hasInput(recipe, stack)) {
+				matches.add(recipe);
+			}
+		}
+		return matches;
+	}
+
+	private static boolean hasOutput(EmiRecipe recipe, EmiStack stack) {
+		for (EmiStack output : recipe.getOutputs()) {
+			if (output != null && output.isEqual(stack)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean hasInput(EmiRecipe recipe, EmiStack stack) {
+		for (EmiIngredient input : recipe.getInputs()) {
+			for (EmiStack candidate : input.getEmiStacks()) {
+				if (candidate.isEqual(stack)) {
+					return true;
+				}
+			}
+		}
+		for (EmiIngredient catalyst : recipe.getCatalysts()) {
+			for (EmiStack candidate : catalyst.getEmiStacks()) {
+				if (candidate.isEqual(stack)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }

@@ -3,13 +3,14 @@ package dev.nei.integration;
 import java.util.ArrayList;
 import java.util.List;
 
+import dev.emi.emi.EmiRecipes;
 import dev.emi.emi.api.EmiApi;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import org.jetbrains.annotations.Nullable;
@@ -29,12 +30,19 @@ public final class WorkstationLookup {
 		if (stack == null || stack.isEmpty()) {
 			return found;
 		}
-		for (EmiRecipeCategory category : EmiApi.getRecipeManager().getCategories()) {
-			for (EmiIngredient station : EmiApi.getRecipeManager().getWorkstations(category)) {
-				for (EmiStack candidate : station.getEmiStacks()) {
-					if (candidate.isEqual(stack)) {
-						found.add(category);
-						break;
+		List<EmiRecipeCategory> categories = EmiRecipes.categories;
+		if (categories != null && EmiRecipes.workstations != null) {
+			for (EmiRecipeCategory category : categories) {
+				List<EmiIngredient> stations = EmiRecipes.workstations.get(category);
+				if (stations == null) {
+					continue;
+				}
+				for (EmiIngredient station : stations) {
+					for (EmiStack candidate : station.getEmiStacks()) {
+						if (candidate.isEqual(stack)) {
+							found.add(category);
+							break;
+						}
 					}
 				}
 			}
@@ -85,6 +93,6 @@ public final class WorkstationLookup {
 		if (stack == null || stack.isEmpty()) {
 			return "";
 		}
-		return Registries.ITEM.getId(stack.getItemStack().getItem()).toString();
+		return Registry.ITEM.getId(stack.getItemStack().getItem()).toString();
 	}
 }

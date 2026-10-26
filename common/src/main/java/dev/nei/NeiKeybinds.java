@@ -159,7 +159,7 @@ public final class NeiKeybinds {
 			dev.nei.integration.EmiPanelBridge.sync();
 			MinecraftClient client = MinecraftClient.getInstance();
 			if (client.player != null) {
-				client.player.sendMessage(net.minecraft.text.Text.translatable(
+				client.player.sendMessage(new net.minecraft.text.TranslatableText(
 					NeiConfig.get().panel.enabled ? "nei.status.panel_on" : "nei.status.panel_off"), true);
 			}
 		}

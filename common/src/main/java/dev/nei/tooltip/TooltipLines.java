@@ -13,7 +13,7 @@ import dev.nei.config.NeiConfigData;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.registry.Registries;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -111,15 +111,15 @@ public final class TooltipLines {
 			return;
 		}
 		List<Text> extra = new ArrayList<>();
-		Identifier id = Registries.ITEM.getId(stack.getItem());
+		Identifier id = Registry.ITEM.getId(stack.getItem());
 		if (id != null && cfg.showRegistryName) {
-			extra.add(Text.translatable("nei.tooltip.id", id.toString()));
+			extra.add(new net.minecraft.text.TranslatableText("nei.tooltip.id", id.toString()));
 		}
 		if (id != null && cfg.showModName) {
-			extra.add(Text.translatable("nei.tooltip.mod", modName(id)));
+			extra.add(new net.minecraft.text.TranslatableText("nei.tooltip.mod", modName(id)));
 		}
 		if (cfg.showItemCount) {
-			extra.add(Text.translatable("nei.tooltip.stack_size", stack.getCount(), stack.getMaxCount()));
+			extra.add(new net.minecraft.text.TranslatableText("nei.tooltip.stack_size", stack.getCount(), stack.getMaxCount()));
 		}
 		if (cfg.showTags) {
 			appendTags(stack, extra);
@@ -149,9 +149,9 @@ public final class TooltipLines {
 		if (joined.length() > MAX_TAG_LENGTH) {
 			joined = joined.substring(0, MAX_TAG_LENGTH - 1) + "\u2026";
 		}
-		extra.add(Text.translatable("nei.tooltip.tags", joined));
+		extra.add(new net.minecraft.text.TranslatableText("nei.tooltip.tags", joined));
 		if (tags.size() > shown) {
-			extra.add(Text.translatable("nei.tooltip.tags_more", tags.size() - shown));
+			extra.add(new net.minecraft.text.TranslatableText("nei.tooltip.tags_more", tags.size() - shown));
 		}
 	}
 
@@ -172,13 +172,13 @@ public final class TooltipLines {
 			}
 			String line = key + ": " + value;
 			if (i == 0) {
-				extra.add(Text.translatable("nei.tooltip.nbt", line));
+				extra.add(new net.minecraft.text.TranslatableText("nei.tooltip.nbt", line));
 			} else {
-				extra.add(Text.literal("  " + line));
+				extra.add(new net.minecraft.text.LiteralText("  " + line));
 			}
 		}
 		if (keys.size() > shown) {
-			extra.add(Text.translatable("nei.tooltip.nbt_more", keys.size() - shown));
+			extra.add(new net.minecraft.text.TranslatableText("nei.tooltip.nbt_more", keys.size() - shown));
 		}
 	}
 }

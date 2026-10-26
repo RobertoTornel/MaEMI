@@ -6,7 +6,8 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
 
 	// EMI provides the item/recipe stack and the host UI. We only ever use its API.
-	modImplementation "dev.emi:emi-fabric:$rootProject.emi_version"
+	// 0.7.x predates EMI's maven, so it comes from Modrinth's maven (slug: emi).
+	modImplementation "maven.modrinth:emi:$rootProject.emi_version"
 	// Cloth Config's API is loader-agnostic; the platform modules supply the implementation.
 	modImplementation "me.shedaniel.cloth:cloth-config-fabric:$rootProject.cloth_config_version"
 

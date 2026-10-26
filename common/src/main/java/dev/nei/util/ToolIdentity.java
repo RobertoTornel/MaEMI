@@ -6,7 +6,7 @@ import dev.emi.emi.api.stack.EmiStack;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.Registries;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.util.Identifier;
 
 /**
@@ -51,7 +51,7 @@ public final class ToolIdentity {
 				&& !(item instanceof net.minecraft.item.ShieldItem)) {
 			return true;
 		}
-		Identifier id = Registries.ITEM.getId(item);
+		Identifier id = Registry.ITEM.getId(item);
 		if (id == null || !"gtceu".equals(id.getNamespace())) {
 			return false;
 		}

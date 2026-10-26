@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import dev.emi.emi.registry.EmiRecipeFiller;
+import dev.emi.emi.EmiRecipeFiller;
 import dev.emi.emi.api.recipe.EmiPlayerInventory;
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.recipe.handler.EmiRecipeHandler;

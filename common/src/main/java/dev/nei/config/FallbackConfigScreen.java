@@ -13,14 +13,14 @@ public final class FallbackConfigScreen extends Screen {
 	private final Screen parent;
 
 	public FallbackConfigScreen(Screen parent) {
-		super(Text.translatable("nei.config.title"));
+		super(new net.minecraft.text.TranslatableText("nei.config.title"));
 		this.parent = parent;
 	}
 
 	@Override
 	protected void init() {
-		addDrawableChild(ButtonWidget.builder(Text.translatable("gui.done"), b -> close())
-			.dimensions(width / 2 - 100, height - 40, 200, 20).build());
+		addDrawableChild(new ButtonWidget(width / 2 - 100, height - 40, 200, 20,
+			new net.minecraft.text.TranslatableText("gui.done"), b -> close()));
 	}
 
 	@Override
@@ -30,8 +30,8 @@ public final class FallbackConfigScreen extends Screen {
 		super.render(matrices, mouseX, mouseY, delta);
 		context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 40, 0xFFFFFF);
 		String path = NeiConfig.file() == null ? "config/nei.json" : NeiConfig.file().toString();
-		context.drawCenteredTextWithShadow(textRenderer, Text.translatable("nei.config.fallback.cloth"), width / 2, 70, 0xFFAAAA);
-		context.drawCenteredTextWithShadow(textRenderer, Text.literal(path), width / 2, 90, 0xAAAAAA);
+		context.drawCenteredTextWithShadow(textRenderer, new net.minecraft.text.TranslatableText("nei.config.fallback.cloth"), width / 2, 70, 0xFFAAAA);
+		context.drawCenteredTextWithShadow(textRenderer, new net.minecraft.text.LiteralText(path), width / 2, 90, 0xAAAAAA);
 	}
 
 	@Override

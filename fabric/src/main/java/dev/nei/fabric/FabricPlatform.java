@@ -41,8 +41,9 @@ public final class FabricPlatform implements NeiPlatform {
 	@Override
 	public void sendCommand(String command) {
 		MinecraftClient client = MinecraftClient.getInstance();
-		if (client.getNetworkHandler() != null) {
-			client.getNetworkHandler().sendCommand(command);
+		if (client.player != null && client.getNetworkHandler() != null) {
+			// 1.18.2 has no ClientPlayNetworkHandler#sendCommand; chat handles the leading slash.
+			client.player.sendChatMessage("/" + command);
 		}
 	}
 
