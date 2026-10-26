@@ -30,61 +30,21 @@ public final class NeiConfigScreen {
 			.setTooltip(Text.translatable("nei.config.enabled.tooltip"))
 			.setSaveConsumer(v -> d.general.enabled = v)
 			.build());
-		general.addEntry(eb.startBooleanToggle(Text.translatable("nei.config.show_everywhere"), d.general.showEverywhere)
-			.setDefaultValue(false)
-			.setSaveConsumer(v -> d.general.showEverywhere = v)
-			.build());
 		general.addEntry(eb.startBooleanToggle(Text.translatable("nei.config.log_compat"), d.general.logCompatReport)
 			.setDefaultValue(true)
 			.setSaveConsumer(v -> d.general.logCompatReport = v)
 			.build());
 
-		ConfigCategory panel = builder.getOrCreateCategory(Text.translatable("nei.config.panel"));
-		panel.addEntry(eb.startBooleanToggle(Text.translatable("nei.config.panel.enabled"), d.panel.enabled)
+		ConfigCategory calc = builder.getOrCreateCategory(Text.translatable("nei.config.calculator"));
+		calc.addEntry(eb.startBooleanToggle(Text.translatable("nei.config.calculator.search_bar"),
+			d.calculator.showInSearchBar)
 			.setDefaultValue(true)
-			.setSaveConsumer(v -> d.panel.enabled = v)
+			.setTooltip(Text.translatable("nei.config.calculator.search_bar.tooltip"))
+			.setSaveConsumer(v -> d.calculator.showInSearchBar = v)
 			.build());
-		panel.addEntry(eb.startEnumSelector(Text.translatable("nei.config.panel.side"), NeiConfigData.Side.class, d.panel.side)
-			.setDefaultValue(NeiConfigData.Side.LEFT)
-			.setEnumNameProvider(side -> Text.translatable("nei.config.side." + side.name().toLowerCase()))
-			.setSaveConsumer(v -> d.panel.side = v)
-			.build());
-		panel.addEntry(eb.startIntSlider(Text.translatable("nei.config.panel.columns"), d.panel.columns, 4, 12)
-			.setDefaultValue(9)
-			.setSaveConsumer(v -> d.panel.columns = v)
-			.build());
-		panel.addEntry(eb.startIntSlider(Text.translatable("nei.config.panel.rows"), d.panel.rows, 2, 20)
-			.setDefaultValue(8)
-			.setSaveConsumer(v -> d.panel.rows = v)
-			.build());
-		panel.addEntry(eb.startEnumSelector(Text.translatable("nei.config.panel.sort"), NeiConfigData.Sort.class, d.panel.sort)
-			.setDefaultValue(NeiConfigData.Sort.MOD)
-			.setEnumNameProvider(sort -> Text.translatable("nei.config.sort." + sort.name().toLowerCase()))
-			.setSaveConsumer(v -> d.panel.sort = v)
-			.build());
-		panel.addEntry(eb.startBooleanToggle(Text.translatable("nei.config.panel.item_count"), d.panel.showItemCount)
-			.setDefaultValue(true)
-			.setSaveConsumer(v -> d.panel.showItemCount = v)
-			.build());
-		panel.addEntry(eb.startBooleanToggle(Text.translatable("nei.config.panel.item_ids"), d.panel.showItemIds)
-			.setDefaultValue(false)
-			.setSaveConsumer(v -> d.panel.showItemIds = v)
-			.build());
-		panel.addEntry(eb.startBooleanToggle(Text.translatable("nei.config.panel.hidden"), d.panel.showHiddenItems)
-			.setDefaultValue(false)
-			.setSaveConsumer(v -> d.panel.showHiddenItems = v)
-			.build());
-		panel.addEntry(eb.startBooleanToggle(Text.translatable("nei.config.panel.tabs"), d.panel.showTabs)
-			.setDefaultValue(true)
-			.setSaveConsumer(v -> d.panel.showTabs = v)
-			.build());
-		panel.addEntry(eb.startBooleanToggle(Text.translatable("nei.config.panel.replace_emi"), d.panel.replaceEmiIndex)
-			.setDefaultValue(false)
-			.setTooltip(Text.translatable("nei.config.panel.replace_emi.tooltip"))
-			.setSaveConsumer(v -> {
-				d.panel.replaceEmiIndex = v;
-				dev.nei.integration.EmiPanelBridge.sync();
-			})
+		calc.addEntry(eb.startStrField(Text.translatable("nei.config.calculator.name"), d.calculator.name)
+			.setDefaultValue("")
+			.setSaveConsumer(v -> d.calculator.name = v == null ? "" : v.trim())
 			.build());
 
 		ConfigCategory search = builder.getOrCreateCategory(Text.translatable("nei.config.search"));
