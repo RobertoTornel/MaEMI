@@ -1,6 +1,35 @@
 # Changelog
 
-## 1.0.1
+## 1.0.1 - multi-version
+
+### Supported Minecraft versions
+
+One source tree, one branch per Minecraft version. Every branch compiles and ships its own jars.
+
+| Minecraft | Fabric | Forge |
+| --- | --- | --- |
+| 1.18.2 | yes | - |
+| 1.19.2 | yes | yes |
+| 1.19.3 | yes | yes |
+| 1.19.4 | yes | yes |
+| 1.20 | yes | yes |
+| 1.20.1 | yes | yes |
+| 1.20.2 | yes | yes |
+| 1.20.4 | yes | - |
+| 1.20.6 | yes | - |
+| 1.21 | yes | - |
+| 1.21.1 | yes | - |
+
+That is every Minecraft version EMI itself has a build for.
+
+### Porting notes
+
+- Minecraft 1.19.x has no `DrawContext`; the panel draws through a small `dev.nei.render.DrawContext`
+  shim over the version's own `MatrixStack` helpers, so the renderer is written once.
+- Minecraft 1.20.5+ replaced item NBT with data components; those branches read
+  `DataComponentTypes.CUSTOM_DATA` instead of `ItemStack#getNbt`.
+- Screen rendering, tooltip construction and the EMI autocraft entry point changed signature several
+  times across these versions; each branch carries the call that its own EMI and Minecraft expect.
 
 ### Craft amounts
 
