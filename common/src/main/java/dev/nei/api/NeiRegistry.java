@@ -51,6 +51,10 @@ public final class NeiRegistry {
 	}
 
 	public void addAlias(EmiIngredient stack, net.minecraft.text.Text text) {
-		emi.addAlias(stack, text);
+		try {
+			EmiRegistry.class.getMethod("addAlias", EmiIngredient.class, net.minecraft.text.Text.class)
+					.invoke(emi, stack, text);
+		} catch (Throwable ignored) {
+		}
 	}
 }
