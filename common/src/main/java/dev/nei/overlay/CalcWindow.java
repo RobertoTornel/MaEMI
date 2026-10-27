@@ -5,7 +5,7 @@ import dev.nei.config.NeiConfig;
 import dev.nei.config.NeiConfigData;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
+import dev.nei.render.DrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.text.LiteralText;
