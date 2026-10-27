@@ -6,7 +6,7 @@ import dev.nei.config.NeiConfig;
 import dev.nei.mixin.ClickableWidgetAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
+import dev.nei.render.DrawContext;
 
 /**
  * Draws the evaluated result at the right end of EMI's search bar.
