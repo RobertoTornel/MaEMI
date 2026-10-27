@@ -107,7 +107,7 @@ step limit. The amount is read from the modifiers held when C is pressed.
 
 - Type arithmetic into EMI's search box and the value is drawn at the right edge of the field, in a
   dim colour, while you type. The field keeps every keystroke and click; the result is display only.
-- Click the value to pin the calculation and open the floating window.
+- Click the value to pin the calculation and open the floating window; the search bar is cleared so the pinned calculation stands alone.
 - Supports `+ - * / %`, parentheses, unary minus, decimals, and `^` or `**` for powers, with the
   usual precedence. `((232134/23)*29+2.3)-90000000000000` answers itself.
 - Results are computed in `BigDecimal` and grouped for reading: that expression shows
@@ -242,6 +242,7 @@ They do not change the requirement that EMI must be installed.
 | **Ctrl + Shift + C** | Autocraft as many as possible |
 | **P** | Open MaEMI settings |
 | **F8** | Write the data dump |
+| **Close calculator** (unbound by default) | Close the calculator window and unpin |
 
 The retired MaEMI panel, bookmark and hide actions are not registered, so they cannot steal keys
 from EMI or other mods.

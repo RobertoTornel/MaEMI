@@ -449,4 +449,13 @@ public final class CalcWindow {
 		restoredOpenState = true;
 		CalcResult.restore(config().open);
 	}
+
+	/** Close the calculation and hide the window. Used by the close calculator keybind. */
+	public void close() {
+		CalcResult.dismiss();
+		NeiConfigData.Calculator cfg = config();
+		cfg.open = false;
+		save();
+	}
+
 }
