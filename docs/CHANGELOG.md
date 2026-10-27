@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.5
+
+### Calculator fixes and pinning
+
+- **Search bar result is smaller:** just the number, drawn dimmed at the right edge of EMI's field.
+- **Click the value** to pin the calculation and open the floating window.
+- **Pin button** (next to close) stores the calculation until you explicitly close it. A pinned
+  result is not replaced by new search-bar input.
+- **Click the value in the window** to show or hide the expression beneath it.
+- **Items bar on one side only:** EMI's index sidebar is restored on the left side, not both.
+- Smaller default window size: just the number, nothing more.
+
 ## 1.0.4
 
 ### The search bar is a calculator now

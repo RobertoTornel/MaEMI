@@ -105,5 +105,7 @@
 	"nei.config.calculator.name": "Window name",
 	"nei.calc.default_name": "Calculator",
 	"nei.calc.close": "Close",
+	"nei.calc.pin": "Pin calculation",
+	"nei.calc.unpin": "Unpin calculation",
 	"nei.status.bookmarks_count": "EMI: %s bookmarked stacks are saved (shown in EMI's favourites)."
 }
