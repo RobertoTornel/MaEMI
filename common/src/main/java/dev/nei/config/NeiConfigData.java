@@ -43,6 +43,10 @@ public final class NeiConfigData {
 		public boolean open = true;
 		/** Draw the evaluated result at the right end of EMI's search bar. */
 		public boolean showInSearchBar = true;
+		/** Whether the last calculation is pinned and persists until explicitly closed. */
+		public boolean pinned = false;
+		/** Whether to show the expression beneath the value in the window. */
+		public boolean showExpression = true;
 	}
 
 	public static final class Search {
