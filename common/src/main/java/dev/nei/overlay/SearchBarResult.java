@@ -3,6 +3,7 @@ package dev.nei.overlay;
 import dev.emi.emi.screen.EmiScreenManager;
 import dev.emi.emi.screen.widget.EmiSearchWidget;
 import dev.nei.config.NeiConfig;
+import dev.nei.mixin.ClickableWidgetAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import dev.nei.render.DrawContext;
@@ -73,7 +74,7 @@ public final class SearchBarResult {
 			if (value == null || value.isEmpty()) {
 				return false;
 			}
-			int searchX = search.getX();
+			int searchX = ((ClickableWidgetAccessor) search).nei$getX();
 			int left = searchX + INSET;
 			int right = searchX + search.getWidth() - INSET - PADDING_RIGHT;
 			int available = right - left;
@@ -92,7 +93,7 @@ public final class SearchBarResult {
 			}
 			int textWidth = textRendererWidth(shown);
 			int x = right - textWidth;
-			int y = search.getY();
+			int y = ((ClickableWidgetAccessor) search).nei$getY();
 			int height = search.getHeight();
 			return mouseX >= x && mouseX < x + textWidth && mouseY >= y && mouseY < y + height;
 		} catch (Throwable ignored) {
@@ -129,7 +130,7 @@ public final class SearchBarResult {
 			if (value == null || value.isEmpty()) {
 				return;
 			}
-			int searchX = search.getX();
+			int searchX = ((ClickableWidgetAccessor) search).nei$getX();
 			int left = searchX + INSET;
 			int right = searchX + search.getWidth() - INSET - PADDING_RIGHT;
 			int available = right - left;
@@ -150,7 +151,7 @@ public final class SearchBarResult {
 			}
 			int textWidth = textRenderer.getWidth(shown);
 			int x = right - textWidth;
-			int y = search.getY() + (search.getHeight() - 8) / 2;
+			int y = ((ClickableWidgetAccessor) search).nei$getY() + (search.getHeight() - 8) / 2;
 			// Dim, but bright enough to read on the field's dark background.
 			context.drawText(textRenderer, shown, x, y, 0xFF9AA79A, false);
 		} catch (Throwable ignored) {
