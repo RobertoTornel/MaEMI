@@ -74,7 +74,7 @@ public final class SearchBarResult {
 			if (value == null || value.isEmpty()) {
 				return false;
 			}
-			int searchX = ((ClickableWidgetAccessor) search).nei();
+			int searchX = ((ClickableWidgetAccessor) search).nei$getX();
 			int left = searchX + INSET;
 			int right = searchX + search.getWidth() - INSET - PADDING_RIGHT;
 			int available = right - left;
@@ -93,7 +93,7 @@ public final class SearchBarResult {
 			}
 			int textWidth = textRendererWidth(shown);
 			int x = right - textWidth;
-			int y = ((ClickableWidgetAccessor) search).nei();
+			int y = ((ClickableWidgetAccessor) search).nei$getX();
 			int height = search.getHeight();
 			return mouseX >= x && mouseX < x + textWidth && mouseY >= y && mouseY < y + height;
 		} catch (Throwable ignored) {
@@ -130,7 +130,7 @@ public final class SearchBarResult {
 			if (value == null || value.isEmpty()) {
 				return;
 			}
-			int searchX = ((ClickableWidgetAccessor) search).nei();
+			int searchX = ((ClickableWidgetAccessor) search).nei$getX();
 			int left = searchX + INSET;
 			int right = searchX + search.getWidth() - INSET - PADDING_RIGHT;
 			int available = right - left;
@@ -151,7 +151,7 @@ public final class SearchBarResult {
 			}
 			int textWidth = textRenderer.getWidth(shown);
 			int x = right - textWidth;
-			int y = ((ClickableWidgetAccessor) search).nei() + (search.getHeight() - 8) / 2;
+			int y = ((ClickableWidgetAccessor) search).nei$getX() + (search.getHeight() - 8) / 2;
 			// Dim, but bright enough to read on the field's dark background.
 			context.drawText(textRenderer, shown, x, y, 0xFF9AA79A, false);
 		} catch (Throwable ignored) {
