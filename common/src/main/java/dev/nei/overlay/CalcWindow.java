@@ -7,6 +7,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import dev.nei.render.DrawContext;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.text.LiteralText;
 
 /**
  * The small floating window that keeps a calculation on screen.
@@ -120,7 +122,7 @@ public final class CalcWindow {
 
 	private static String displayName(NeiConfigData.Calculator cfg) {
 		if (cfg.name == null || cfg.name.isBlank()) {
-			return Text.translatable("nei.calc.default_name").getString();
+			return new TranslatableText("nei.calc.default_name").getString();
 		}
 		return cfg.name.trim();
 	}
@@ -396,7 +398,7 @@ public final class CalcWindow {
 			context.fill(px, mirror, px + 1, mirror + 1, CLOSE_GLYPH);
 		}
 		if (hovered) {
-			context.drawTooltip(textRenderer, List.of(Text.translatable("nei.calc.close")), mouseX, mouseY);
+			context.drawTooltip(textRenderer, List.of(new TranslatableText("nei.calc.close")), mouseX, mouseY);
 		}
 
 		boolean pinHovered = insidePin(mouseX, mouseY);
@@ -411,7 +413,7 @@ public final class CalcWindow {
 		}
 		context.fill(px + pinInset, py + pinInset, px + pinInset + 1, py + pinInset + PIN_SIZE - pinInset * 2, PIN_GLYPH);
 		if (pinHovered) {
-			context.drawTooltip(textRenderer, List.of(Text.translatable(CalcResult.isPinned() ? "nei.calc.unpin" : "nei.calc.pin")), mouseX, mouseY);
+			context.drawTooltip(textRenderer, List.of(new TranslatableText(CalcResult.isPinned() ? "nei.calc.unpin" : "nei.calc.pin")), mouseX, mouseY);
 		}
 	}
 
@@ -437,7 +439,7 @@ public final class CalcWindow {
 		}
 		// Hovering the value shows the full digits, which is the point of the window for long numbers.
 		if (mouseY >= valueY - 2 && mouseY < valueY + 10) {
-			context.drawTooltip(textRenderer, List.of(Text.literal(value)), mouseX, mouseY);
+			context.drawTooltip(textRenderer, List.of(new LiteralText(value)), mouseX, mouseY);
 		}
 	}
 
