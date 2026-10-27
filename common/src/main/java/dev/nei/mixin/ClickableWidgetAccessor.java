@@ -5,7 +5,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
- * Read-only view of a widget's origin on 1.19.2.
+ * Read-only view of a widget's origin on 1.19.x.
  *
  * <p>{@code ClickableWidget} only gained public {@code getX()}/{@code getY()} in 1.19.3; on this
  * branch the fields are protected, so the calculator cannot read EMI's search-field position through
