@@ -98,6 +98,7 @@
 	"key.nei.open_config": "Open MaEMI settings",
 	"key.nei.hide_item": "Hide MaEMI item (retired)",
 	"key.nei.toggle_cheat": "Toggle MaEMI cheat mode",
+	"key.nei.calc_close": "Close calculator",
 	"category.nei": "MaEMI",
 	"nei.config.calculator": "Calculator",
 	"nei.config.calculator.search_bar": "Show result in the search bar",
@@ -105,5 +106,7 @@
 	"nei.config.calculator.name": "Window name",
 	"nei.calc.default_name": "Calculator",
 	"nei.calc.close": "Close",
+	"nei.calc.pin": "Pin calculation",
+	"nei.calc.unpin": "Unpin calculation",
 	"nei.status.bookmarks_count": "EMI: %s bookmarked stacks are saved (shown in EMI's favourites)."
 }

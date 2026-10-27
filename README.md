@@ -105,8 +105,9 @@ step limit. The amount is read from the modifiers held when C is pressed.
 
 ### Calculator in the search bar
 
-- Type arithmetic into EMI's search box and the value is drawn right-aligned inside the field, in a
+- Type arithmetic into EMI's search box and the value is drawn at the right edge of the field, in a
   dim colour, while you type. The field keeps every keystroke and click; the result is display only.
+- Click the value to pin the calculation and open the floating window; the search bar is cleared so the pinned calculation stands alone.
 - Supports `+ - * / %`, parentheses, unary minus, decimals, and `^` or `**` for powers, with the
   usual precedence. `((232134/23)*29+2.3)-90000000000000` answers itself.
 - Results are computed in `BigDecimal` and grouped for reading: that expression shows
@@ -123,9 +124,13 @@ step limit. The amount is read from the modifiers held when C is pressed.
   search field loses focus.
 - Drag the title bar to move it; the position is clamped to the screen so it cannot be lost
   off-screen. Click the close button to hide it.
+- Click the pin button (next to close) to keep the calculation on screen until you explicitly close
+  it. A pinned calculation is not replaced by new search-bar input.
+- Click the value to show or hide the expression beneath it.
 - Dragging the title bar reveals an inline editable label, so the window can be renamed in place.
-- Name, position and open state are saved to `config/nei.json` under `calculator`, so the window
-  comes back as you left it. The search-bar result can be switched off in settings.
+- Name, position, open state, pinned state and expression visibility are saved to
+  `config/nei.json` under `calculator`, so the window comes back as you left it. The search-bar
+  result can be switched off in settings.
 
 ### Configuration and diagnostics
 
@@ -237,6 +242,7 @@ They do not change the requirement that EMI must be installed.
 | **Ctrl + Shift + C** | Autocraft as many as possible |
 | **P** | Open MaEMI settings |
 | **F8** | Write the data dump |
+| **Close calculator** (unbound by default) | Close the calculator window and unpin |
 
 The retired MaEMI panel, bookmark and hide actions are not registered, so they cannot steal keys
 from EMI or other mods.
