@@ -98,6 +98,7 @@
 	"key.nei.open_config": "Open MaEMI settings",
 	"key.nei.hide_item": "Hide MaEMI item (retired)",
 	"key.nei.toggle_cheat": "Toggle MaEMI cheat mode",
+	"key.nei.calc_close": "Close calculator",
 	"category.nei": "MaEMI",
 	"nei.config.calculator": "Calculator",
 	"nei.config.calculator.search_bar": "Show result in the search bar",
