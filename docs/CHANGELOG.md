@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.5
+
+### Calculator fixes and pinning
+
+- **Search bar result is smaller:** just the number, drawn dimmed at the right edge of EMI's field.
+- **Click the value** to pin the calculation and open the floating window.
+- **Pin button** (next to close) stores the calculation until you explicitly close it. A pinned
+  result is not replaced by new search-bar input.
+- **Click the value in the window** to show or hide the expression beneath it.
+- **Items bar on one side only:** EMI's index sidebar is restored on the left side, not both.
+- Smaller default window size: just the number, nothing more.
+
 ## 1.0.4
 
 ### The search bar is a calculator now
@@ -37,15 +49,6 @@ panel keybind, and their translations. EMI owns that screen space and always did
 Bookmarks, hidden items and subsets are kept — only the dead UI was removed, so existing configs and
 saved data still load. Old config files containing `panel.enabled` are tolerated and the stale key is
 dropped on the next save.
-
-### Notes on 1.19.2
-
-The calculator window draws from `Screen.render`'s tail on this branch. 1.19.2 has no
-`Screen.renderWithTooltip` — that method first appears in 1.19.3 — so on non-container screens the
-window is drawn at the end of the screen's own rendering, and a tooltip the game draws after the
-screen returns can overlap it. Container screens are unaffected: their window is drawn from
-`HandledScreen.render`'s tail. The search-field geometry is read through a small `ClickableWidget`
-accessor mixin because `ClickableWidget.getX()`/`getY()` only arrived in 1.19.3.
 
 ## 1.0.3
 

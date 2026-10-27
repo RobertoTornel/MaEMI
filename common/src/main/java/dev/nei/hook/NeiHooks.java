@@ -8,7 +8,7 @@ import dev.nei.overlay.SearchBarResult;
 import dev.nei.util.StatusLine;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import dev.nei.render.DrawContext;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.text.Text;
@@ -86,6 +86,11 @@ public final class NeiHooks {
 			return false;
 		}
 		try {
+			// Clicking the search-bar result pins the calculation and opens the window.
+			if (SearchBarResult.isMouseOver(mouseX, mouseY)) {
+				SearchBarResult.onClick();
+				return true;
+			}
 			return CalcWindow.get().mouseClicked(screen.width, screen.height, mouseX, mouseY, button);
 		} catch (Throwable ignored) {
 			return false;
