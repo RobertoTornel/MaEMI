@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.5
+
+### Calculator fixes and pinning
+
+- **Search bar result is smaller:** just the number, drawn dimmed at the right edge of EMI's field.
+- **Click the value** to pin the calculation and open the floating window.
+- **Pin button** (next to close) stores the calculation until you explicitly close it. A pinned
+  result is not replaced by new search-bar input.
+- **Click the value in the window** to show or hide the expression beneath it.
+- **Items bar on one side only:** EMI's index sidebar is restored on the left side, not both.
+- Smaller default window size: just the number, nothing more.
+
 ## 1.0.4
 
 ### The search bar is a calculator now
@@ -37,23 +49,6 @@ panel keybind, and their translations. EMI owns that screen space and always did
 Bookmarks, hidden items and subsets are kept — only the dead UI was removed, so existing configs and
 saved data still load. Old config files containing `panel.enabled` are tolerated and the stale key is
 dropped on the next save.
-
-### Port notes: Minecraft 1.20.6
-
-- Fabric only. This branch builds `common` + `fabric` (`enabled_platforms=fabric`); the leftover
-  `forge/` sources are not part of `settings.gradle` and no Forge or NeoForge artifact is produced.
-- Minecraft 1.20.5+ stores item data in components instead of NBT. This release reads none of it:
-  `ItemIndex` copies EMI's stack list and the overlay only handles strings, so the panel removal
-  left the branch's component code untouched — `StackIO` and `DumpService` go through
-  `ComponentChanges`, and `ToolIdentity` and `TooltipLines` read
-  `DataComponentTypes.CUSTOM_DATA`.
-- The overlay hooks `Screen#renderWithTooltip` and `HandledScreen#render`; the mixin refmap resolves
-  them to `method_47413` and `method_25394` in the 1.20.6 intermediary mappings, so the injection
-  points carried over unchanged.
-- Nothing overrides EMI's search widget: the value is read from
-  `EmiScreenManager.search.getText()` at render time, so the `render`/`renderWidget` split does not
-  apply to this release.
-- Built with Java 21, which this branch requires (`fabric.mod.json`).
 
 ## 1.0.3
 
