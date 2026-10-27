@@ -19,7 +19,7 @@ public final class EmiPanelBridge {
 	}
 
 	/**
-	 * Restores EMI's index on both sides when it is missing. Idempotent and cheap; called once at EMI
+	 * Restores EMI's index on one sidebar when it is missing. Idempotent and cheap; called once at EMI
 	 * registration.
 	 */
 	public static void sync() {
@@ -28,7 +28,6 @@ public final class EmiPanelBridge {
 		}
 		checked = true;
 		restore(EmiConfig.leftSidebarPages);
-		restore(EmiConfig.rightSidebarPages);
 	}
 
 	private static void restore(SidebarPages pages) {
