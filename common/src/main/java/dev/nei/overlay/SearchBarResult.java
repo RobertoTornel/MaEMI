@@ -74,7 +74,7 @@ public final class SearchBarResult {
 				return false;
 			}
 			int left = search.getX() + INSET;
-			int right = search.getX() + search.getWidth() - INSET - PADDING_RIGHT;
+			int right = searchX + search.getWidth() - INSET - PADDING_RIGHT;
 			int available = right - left;
 			if (available <= 8) {
 				return false;
@@ -91,7 +91,7 @@ public final class SearchBarResult {
 			}
 			int textWidth = textRendererWidth(shown);
 			int x = right - textWidth;
-			int y = search.getY();
+			int y = ((ClickableWidgetAccessor) search).nei$getY();
 			int height = search.getHeight();
 			return mouseX >= x && mouseX < x + textWidth && mouseY >= y && mouseY < y + height;
 		} catch (Throwable ignored) {
@@ -122,7 +122,7 @@ public final class SearchBarResult {
 				return;
 			}
 			int left = search.getX() + INSET;
-			int right = search.getX() + search.getWidth() - INSET - PADDING_RIGHT;
+			int right = searchX + search.getWidth() - INSET - PADDING_RIGHT;
 			int available = right - left;
 			if (available <= 8) {
 				return;
