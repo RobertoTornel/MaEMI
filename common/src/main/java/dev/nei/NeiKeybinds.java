@@ -10,6 +10,7 @@ import dev.nei.dump.DumpService;
 import dev.nei.item.HideList;
 import dev.nei.util.HoveredStack;
 import dev.nei.config.NeiConfig;
+import dev.nei.overlay.CalcWindow;
 import dev.nei.platform.NeiKeybind;
 import dev.nei.platform.NeiPlatform;
 import net.minecraft.client.MinecraftClient;
@@ -29,7 +30,8 @@ public final class NeiKeybinds {
 		OPEN_CONFIG("key.nei.open_config", GLFW.GLFW_KEY_P),
 		HIDE_ITEM("key.nei.hide_item", GLFW.GLFW_KEY_UNKNOWN),
 		TOGGLE_CHEAT("key.nei.toggle_cheat", GLFW.GLFW_KEY_UNKNOWN),
-		DUMP("key.nei.dump", GLFW.GLFW_KEY_F8);
+		DUMP("key.nei.dump", GLFW.GLFW_KEY_F8),
+		CLOSE_CALCULATOR("key.nei.calc_close", GLFW.GLFW_KEY_UNKNOWN);
 
 		public final String translationKey;
 		public final int defaultKey;
@@ -105,6 +107,7 @@ public final class NeiKeybinds {
 					status(hidden ? "nei.status.hidden" : "nei.status.unhidden");
 				}
 			}
+			case CLOSE_CALCULATOR -> CalcWindow.get().close();
 			case TOGGLE_CHEAT -> {
 				NeiConfig.get().cheat.enabled = !NeiConfig.get().cheat.enabled;
 				NeiConfig.save();
