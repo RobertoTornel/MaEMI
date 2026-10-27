@@ -5,6 +5,9 @@ import dev.nei.config.NeiConfig;
 import dev.nei.config.NeiConfigData;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.text.LiteralText;
 import dev.nei.render.DrawContext;
 import net.minecraft.text.Text;
 
@@ -437,7 +440,7 @@ public final class CalcWindow {
 		}
 		// Hovering the value shows the full digits, which is the point of the window for long numbers.
 		if (mouseY >= valueY - 2 && mouseY < valueY + 10) {
-			context.drawTooltip(textRenderer, List.of(Text.literal(value)), mouseX, mouseY);
+			context.drawTooltip(textRenderer, List.of(new LiteralText(value)), mouseX, mouseY);
 		}
 	}
 
@@ -449,4 +452,13 @@ public final class CalcWindow {
 		restoredOpenState = true;
 		CalcResult.restore(config().open);
 	}
+
+	/** Close the calculation and hide the window. Used by the close calculator keybind. */
+	public void close() {
+		CalcResult.dismiss();
+		NeiConfigData.Calculator cfg = config();
+		cfg.open = false;
+		save();
+	}
+
 }
