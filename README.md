@@ -9,6 +9,7 @@ away. MaEMI supplies the parts EMI does not:
 - **tool-aware matching** that reuses tools instead of demanding a fresh copy
 - tag-aware ingredient planning
 - **AE2 terminal support**, including ME network stock and the terminal crafting grid
+- a **calculator built into EMI's search bar**
 - extra tooltips, a data dump and a small settings screen
 
 ## Features
@@ -101,6 +102,35 @@ step limit. The amount is read from the modifiers held when C is pressed.
   finally the container slot under the cursor.
 - Extra tooltip lines show the registry id, mod name, stack count, tags and selected NBT data.
 - Tooltip limits and individual line groups are configurable.
+
+### Calculator in the search bar
+
+- Type arithmetic into EMI's search box and the value is drawn at the right edge of the field, in a
+  dim colour, while you type. The field keeps every keystroke and click; the result is display only.
+- Click the value to pin the calculation and open the floating window.
+- Supports `+ - * / %`, parentheses, unary minus, decimals, and `^` or `**` for powers, with the
+  usual precedence. `((232134/23)*29+2.3)-90000000000000` answers itself.
+- Results are computed in `BigDecimal` and grouped for reading: that expression shows
+  `-89,999,999,707,307.004347826087` rather than `-9.0E13`. Scientific notation appears only when a
+  value is genuinely too long to read.
+- Anything that is not a complete expression — `1/0`, a half-typed `2+`, an item name — simply
+  yields no result. It never throws and never interferes with searching.
+- The parser is hand-written, with no script engine: it runs on the render thread on every keystroke,
+  so input length, nesting depth and exponents are all bounded, and it cannot execute code.
+
+### The calculator window
+
+- The last result also appears in a small floating window, so a value can stay on screen after the
+  search field loses focus.
+- Drag the title bar to move it; the position is clamped to the screen so it cannot be lost
+  off-screen. Click the close button to hide it.
+- Click the pin button (next to close) to keep the calculation on screen until you explicitly close
+  it. A pinned calculation is not replaced by new search-bar input.
+- Click the value to show or hide the expression beneath it.
+- Dragging the title bar reveals an inline editable label, so the window can be renamed in place.
+- Name, position, open state, pinned state and expression visibility are saved to
+  `config/nei.json` under `calculator`, so the window comes back as you left it. The search-bar
+  result can be switched off in settings.
 
 ### Configuration and diagnostics
 
@@ -220,8 +250,8 @@ from EMI or other mods.
 
 1. Install EMI, plus Fabric API on Fabric.
 2. Download the jar for your loader:
-   - `maemi-fabric-1.0.1.jar` for Fabric
-   - `maemi-forge-1.0.1.jar` for Forge
+   - `maemi-fabric-1.0.4.jar` for Fabric
+   - `maemi-forge-1.0.4.jar` for Forge
 3. Put exactly one of them in `mods/`. Do not install both loader jars in one instance.
 4. Launch the game. The first launch creates `config/nei.json`.
 5. Optionally install Cloth Config for the normal settings UI and Mod Menu for the Fabric config
@@ -237,8 +267,8 @@ Requirements: Java 21 and the Gradle wrapper.
 
 The loader jars are written to:
 
-- `fabric/build/libs/maemi-fabric-1.0.1.jar`
-- `forge/build/libs/maemi-forge-1.0.1.jar`
+- `fabric/build/libs/maemi-fabric-1.0.4.jar`
+- `forge/build/libs/maemi-forge-1.0.4.jar`
 
 ## Limitations
 
