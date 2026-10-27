@@ -73,8 +73,9 @@ public final class SearchBarResult {
 			if (value == null || value.isEmpty()) {
 				return false;
 			}
-			int left = search.getX() + INSET;
-			int right = search.getX() + search.getWidth() - INSET - PADDING_RIGHT;
+			int searchX = search.getX();
+			int left = searchX + INSET;
+			int right = searchX + search.getWidth() - INSET - PADDING_RIGHT;
 			int available = right - left;
 			if (available <= 8) {
 				return false;
@@ -121,8 +122,9 @@ public final class SearchBarResult {
 			if (value == null || value.isEmpty()) {
 				return;
 			}
-			int left = search.getX() + INSET;
-			int right = search.getX() + search.getWidth() - INSET - PADDING_RIGHT;
+			int searchX = search.getX();
+			int left = searchX + INSET;
+			int right = searchX + search.getWidth() - INSET - PADDING_RIGHT;
 			int available = right - left;
 			if (available <= 8) {
 				return;
