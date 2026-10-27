@@ -93,7 +93,7 @@ public final class SearchBarResult {
 			}
 			int textWidth = textRendererWidth(shown);
 			int x = right - textWidth;
-			int y = ((ClickableWidgetAccessor) search).nei$getX();
+			int y = ((ClickableWidgetAccessor) search).nei$getY();
 			int height = search.getHeight();
 			return mouseX >= x && mouseX < x + textWidth && mouseY >= y && mouseY < y + height;
 		} catch (Throwable ignored) {
