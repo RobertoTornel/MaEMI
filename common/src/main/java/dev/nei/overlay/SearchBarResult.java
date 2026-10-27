@@ -4,7 +4,6 @@ import dev.emi.emi.screen.EmiScreenManager;
 import dev.emi.emi.screen.widget.EmiSearchWidget;
 import dev.nei.config.NeiConfig;
 import dev.nei.mixin.ClickableWidgetAccessor;
-import dev.nei.mixin.ClickableWidgetAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
