@@ -5,10 +5,11 @@ import dev.nei.config.NeiConfig;
 import dev.nei.config.NeiConfigData;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import dev.nei.render.DrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.text.LiteralText;
+import dev.nei.render.DrawContext;
+import net.minecraft.text.Text;
 
 /**
  * The small floating window that keeps a calculation on screen.
@@ -122,7 +123,7 @@ public final class CalcWindow {
 
 	private static String displayName(NeiConfigData.Calculator cfg) {
 		if (cfg.name == null || cfg.name.isBlank()) {
-			return new TranslatableText("nei.calc.default_name").getString();
+			return Text.translatable("nei.calc.default_name").getString();
 		}
 		return cfg.name.trim();
 	}
@@ -398,7 +399,7 @@ public final class CalcWindow {
 			context.fill(px, mirror, px + 1, mirror + 1, CLOSE_GLYPH);
 		}
 		if (hovered) {
-			context.drawTooltip(textRenderer, List.of(new TranslatableText("nei.calc.close")), mouseX, mouseY);
+			context.drawTooltip(textRenderer, List.of(Text.translatable("nei.calc.close")), mouseX, mouseY);
 		}
 
 		boolean pinHovered = insidePin(mouseX, mouseY);
@@ -413,7 +414,7 @@ public final class CalcWindow {
 		}
 		context.fill(px + pinInset, py + pinInset, px + pinInset + 1, py + pinInset + PIN_SIZE - pinInset * 2, PIN_GLYPH);
 		if (pinHovered) {
-			context.drawTooltip(textRenderer, List.of(new TranslatableText(CalcResult.isPinned() ? "nei.calc.unpin" : "nei.calc.pin")), mouseX, mouseY);
+			context.drawTooltip(textRenderer, List.of(Text.translatable(CalcResult.isPinned() ? "nei.calc.unpin" : "nei.calc.pin")), mouseX, mouseY);
 		}
 	}
 
@@ -451,4 +452,13 @@ public final class CalcWindow {
 		restoredOpenState = true;
 		CalcResult.restore(config().open);
 	}
+
+	/** Close the calculation and hide the window. Used by the close calculator keybind. */
+	public void close() {
+		CalcResult.dismiss();
+		NeiConfigData.Calculator cfg = config();
+		cfg.open = false;
+		save();
+	}
+
 }
