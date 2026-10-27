@@ -15,6 +15,8 @@ public final class CalcResult {
 	private static String expression = "";
 	private static String formatted = "";
 	private static boolean dismissed;
+	private static boolean pinned;
+	private static boolean showExpression = true;
 
 	private CalcResult() {
 	}
@@ -22,8 +24,15 @@ public final class CalcResult {
 	/**
 	 * Records what the search field currently evaluates to. Returns true when the shown value changed,
 	 * which is when the window wants to come back.
+	 *
+	 * <p>When the result is pinned, a new expression does not replace it: the player must unpin or
+	 * close first. This stops a fresh keystroke from silently overwriting a calculation the player
+	 * meant to keep.
 	 */
 	public static synchronized boolean update(String query) {
+		if (pinned) {
+			return false;
+		}
 		Optional<BigDecimal> value = dev.nei.math.Expression.value(query);
 		String text = value.map(dev.nei.math.Expression::format).orElse("");
 		if (text.equals(formatted)) {
@@ -54,10 +63,37 @@ public final class CalcResult {
 
 	/** True when there is something to draw: a value that has not been closed. */
 	public static synchronized boolean visible() {
-		return !formatted.isEmpty() && !dismissed;
+		return !formatted.isEmpty() && (!dismissed || pinned);
 	}
 
+	/** Toggle the pinned state. A pinned calculation stays on screen until explicitly closed. */
+	public static synchronized void togglePin() {
+		pinned = !pinned;
+		if (!pinned) {
+			dismissed = true;
+		}
+	}
+
+	/** True when the calculation is pinned and will not be replaced by new input. */
+	public static synchronized boolean isPinned() {
+		return pinned;
+	}
+
+	/** Toggle whether the expression is shown beneath the value in the window. */
+	public static synchronized void toggleExpression() {
+		showExpression = !showExpression;
+	}
+
+	/** True when the expression should be shown beneath the value. */
+	public static synchronized boolean shouldShowExpression() {
+		return showExpression;
+	}
+
+	/** Close the calculation. A pinned calculation is unpinned instead of dismissed. */
 	public static synchronized void dismiss() {
+		if (pinned) {
+			pinned = false;
+		}
 		dismissed = true;
 	}
 
@@ -66,6 +102,7 @@ public final class CalcResult {
 		formatted = "";
 		expression = "";
 		dismissed = false;
+		pinned = false;
 	}
 
 	public static synchronized void restore(boolean open) {

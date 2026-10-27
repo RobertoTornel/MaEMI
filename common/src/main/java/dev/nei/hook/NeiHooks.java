@@ -86,6 +86,11 @@ public final class NeiHooks {
 			return false;
 		}
 		try {
+			// Clicking the search-bar result pins the calculation and opens the window.
+			if (SearchBarResult.isMouseOver(mouseX, mouseY)) {
+				SearchBarResult.onClick();
+				return true;
+			}
 			return CalcWindow.get().mouseClicked(screen.width, screen.height, mouseX, mouseY, button);
 		} catch (Throwable ignored) {
 			return false;
