@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.5
+
+### Calculator fixes and pinning
+
+- **Search bar result is smaller:** just the number, drawn dimmed at the right edge of EMI's field.
+- **Click the value** to pin the calculation and open the floating window.
+- **Pin button** (next to close) stores the calculation until you explicitly close it. A pinned
+  result is not replaced by new search-bar input.
+- **Click the value in the window** to show or hide the expression beneath it.
+- **Items bar on one side only:** EMI's index sidebar is restored on the left side, not both.
+- Smaller default window size: just the number, nothing more.
+
 ## 1.0.4
 
 ### The search bar is a calculator now
@@ -37,13 +49,6 @@ panel keybind, and their translations. EMI owns that screen space and always did
 Bookmarks, hidden items and subsets are kept — only the dead UI was removed, so existing configs and
 saved data still load. Old config files containing `panel.enabled` are tolerated and the stale key is
 dropped on the next save.
-
-### Branch notes
-
-- This branch ships against EMI 1.1.12 (`emi_version=1.1.12+1.21`), which predates
-  `EmiScreenManager.updateSearchSidebar`; the value in the search bar is read from
-  `EmiScreenManager.search.getText()` while the screen draws, rather than through an EMI refresh hook.
-- Fabric only on this Minecraft version: `maemi-fabric-1.0.4.jar`.
 
 ## 1.0.3
 

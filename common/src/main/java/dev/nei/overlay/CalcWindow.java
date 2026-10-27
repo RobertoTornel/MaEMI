@@ -37,18 +37,24 @@ public final class CalcWindow {
 	private static final int CLOSE_BACKGROUND = 0xFF3A1E1E;
 	private static final int CLOSE_HOVER = 0xFF8E2A2A;
 	private static final int CLOSE_GLYPH = 0xFFE8B0B0;
+	private static final int PIN_BACKGROUND = 0xFF1E3A1E;
+	private static final int PIN_HOVER = 0xFF2E5A2E;
+	private static final int PIN_GLYPH = 0xFFB0E8B0;
 	private static final int LABEL_BACKGROUND = 0xFF101010;
 
 	public static final int TITLE_HEIGHT = 14;
 	/** Big enough to hit without aiming: a 9px glyph is what the brief called out as too small. */
 	public static final int CLOSE_SIZE = 13;
-	public static final int MIN_WIDTH = 96;
-	public static final int MAX_WIDTH = 320;
-	private static final int MIN_HEIGHT = 40;
-	private static final int MAX_HEIGHT = 120;
-	private static final int PADDING = 5;
-	private static final int DEFAULT_WIDTH = 136;
-	private static final int DEFAULT_HEIGHT = 46;
+	/** The pin button is the same size so it is easy to hit. */
+	public static final int PIN_SIZE = 13;
+	/** Small window: just the number, nothing more. */
+	public static final int MIN_WIDTH = 72;
+	public static final int MAX_WIDTH = 240;
+	private static final int MIN_HEIGHT = 30;
+	private static final int MAX_HEIGHT = 80;
+	private static final int PADDING = 4;
+	private static final int DEFAULT_WIDTH = 72;
+	private static final int DEFAULT_HEIGHT = 30;
 
 	private static final CalcWindow INSTANCE = new CalcWindow();
 
@@ -164,6 +170,20 @@ public final class CalcWindow {
 		return y + (TITLE_HEIGHT - CLOSE_SIZE) / 2;
 	}
 
+	private static int pinX(int x, int width) {
+		return x + width - CLOSE_SIZE - PIN_SIZE - 4;
+	}
+
+	private static int pinY(int y) {
+		return y + (TITLE_HEIGHT - PIN_SIZE) / 2;
+	}
+
+	private boolean insidePin(double mouseX, double mouseY) {
+		int px = pinX(frameX, frameWidth);
+		int py = pinY(frameY);
+		return mouseX >= px && mouseX < px + PIN_SIZE && mouseY >= py && mouseY < py + PIN_SIZE;
+	}
+
 	private boolean insideTitle(double mouseX, double mouseY) {
 		return mouseX >= frameX && mouseX < frameX + frameWidth
 				&& mouseY >= frameY && mouseY < frameY + TITLE_HEIGHT;
@@ -209,6 +229,21 @@ public final class CalcWindow {
 			NeiConfigData.Calculator cfg = config();
 			cfg.open = false;
 			save();
+			return true;
+		}
+		if (insidePin(mouseX, mouseY)) {
+			CalcResult.togglePin();
+			commitRename();
+			return true;
+		}
+		// Clicking the value area toggles showing the expression beneath it.
+		int valueLeft = frameX + PADDING;
+		int valueRight = frameX + frameWidth - PADDING;
+		int valueTop = frameY + TITLE_HEIGHT;
+		int valueBottom = frameY + frameHeight;
+		if (mouseX >= valueLeft && mouseX < valueRight && mouseY >= valueTop && mouseY < valueBottom
+				&& !insideClose(mouseX, mouseY) && !insidePin(mouseX, mouseY)) {
+			CalcResult.toggleExpression();
 			return true;
 		}
 		if (insideTitle(mouseX, mouseY)) {
@@ -362,6 +397,21 @@ public final class CalcWindow {
 		}
 		if (hovered) {
 			context.drawTooltip(textRenderer, List.of(Text.translatable("nei.calc.close")), mouseX, mouseY);
+		}
+
+		boolean pinHovered = insidePin(mouseX, mouseY);
+		int px = pinX(x, frameWidth);
+		int py = pinY(y);
+		context.fill(px, py, px + PIN_SIZE, py + PIN_SIZE, pinHovered ? PIN_HOVER : PIN_BACKGROUND);
+		context.drawBorder(px, py, PIN_SIZE, PIN_SIZE, pinHovered ? PIN_GLYPH : BORDER);
+		// Draw a simple pin glyph: a vertical line with a small head.
+		int pinInset = 3;
+		for (int i = 0; i < PIN_SIZE - pinInset * 2; i++) {
+			context.fill(px + pinInset + i, py + pinInset, px + pinInset + i + 1, py + pinInset + 1, PIN_GLYPH);
+		}
+		context.fill(px + pinInset, py + pinInset, px + pinInset + 1, py + pinInset + PIN_SIZE - pinInset * 2, PIN_GLYPH);
+		if (pinHovered) {
+			context.drawTooltip(textRenderer, List.of(Text.translatable(CalcResult.isPinned() ? "nei.calc.unpin" : "nei.calc.pin")), mouseX, mouseY);
 		}
 	}
 
