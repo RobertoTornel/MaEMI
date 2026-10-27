@@ -100,9 +100,16 @@ public final class SearchBarResult {
 		}
 	}
 
-	/** Pin the calculation and open the floating window. Called when the search-bar label is clicked. */
+	/** Pin the calculation and open the floating window. Called when the search-bar label is clicked.
+	 * Clears the search bar so the pinned calculation is completely independent.
+	 */
 	public static void onClick() {
 		CalcResult.togglePin();
+		// Clear the search bar so the pinned calculation stands alone
+		EmiSearchWidget search = EmiScreenManager.search;
+		if (search != null) {
+			search.setText("");
+		}
 	}
 
 	/**
