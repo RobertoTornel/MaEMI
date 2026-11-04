@@ -31,6 +31,10 @@ public interface NeiPlatform {
 	/** Registers a client-side key binding and returns a handle whose {@code wasPressed} is polled each tick. */
 	NeiKeybind registerKeybind(String translationKey, int defaultKey);
 
+	/** Registers client-side commands; called once during client initialisation. */
+	default void registerCommands() {
+	}
+
 	/** Addon plugins discovered by the loader. */
 	default List<NeiPlugin> plugins() {
 		return List.of();

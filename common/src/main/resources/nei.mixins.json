@@ -9,7 +9,8 @@
     "ItemStackTooltipMixin",
     "KeyboardMixin",
     "MouseMixin",
-    "ScreenMixin"
+    "ScreenMixin",
+    "ChatMessageMixin"
   ],
   "injectors": {
     "defaultRequire": 1

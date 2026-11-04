@@ -9,6 +9,11 @@ import dev.nei.config.ConfigScreens;
 import dev.nei.platform.NeiKeybind;
 import dev.nei.platform.NeiPlatform;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.minecraft.command.CommandRegistryAccess;
+import net.minecraft.command.argument.MessageArgumentType;
+import net.minecraft.server.command.CommandManager;
+import net.minecraft.server.command.ServerCommandSource;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -91,5 +96,22 @@ public final class FabricPlatform implements NeiPlatform {
 				return binding.isPressed();
 			}
 		};
+	}
+
+	@Override
+	public void registerCommands() {
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+			dispatcher.register(CommandManager.literal("r")
+				.executes(ctx -> {
+					dev.nei.command.RCommand.handle(new String[0]);
+					return 1;
+				})
+				.then(CommandManager.argument("message", MessageArgumentType.message())
+					.executes(ctx -> {
+						dev.nei.command.RCommand.handle(new String[] { MessageArgumentType.getMessage(ctx, "message").getString() });
+						return 1;
+					})
+			));
+		});
 	}
 }

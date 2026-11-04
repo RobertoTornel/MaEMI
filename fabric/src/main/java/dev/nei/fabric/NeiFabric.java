@@ -13,6 +13,10 @@ public final class NeiFabric implements ClientModInitializer {
 		Nei.init(platform);
 		NeiClient.init(platform);
 		NeiKeybinds.registerAll(platform);
-		ClientTickEvents.END_CLIENT_TICK.register(client -> NeiKeybinds.tick());
+		platform.registerCommands();
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			NeiKeybinds.tick();
+			dev.nei.command.RCommand.tick();
+		});
 	}
 }

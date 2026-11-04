@@ -13,6 +13,12 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraftforge.fml.ModList;
+import net.minecraft.command.CommandRegistryAccess;
+import net.minecraft.command.argument.MessageArgumentType;
+import net.minecraft.server.command.CommandManager;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.jetbrains.annotations.Nullable;
@@ -102,6 +108,27 @@ public final class ForgePlatform implements NeiPlatform {
 
 	public List<PendingBind> pendingBinds() {
 		return pending;
+	}
+
+	@Override
+	public void registerCommands() {
+		// Forge registers commands via the RegisterCommandsEvent; subscribe here so the
+		// /r command is registered when Forge fires the event.
+		net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(this);
+	}
+
+	@SubscribeEvent
+	public void onRegisterCommands(RegisterCommandsEvent event) {
+		event.getDispatcher().register(CommandManager.literal("r")
+			.executes(ctx -> {
+				dev.nei.command.RCommand.handle(new String[0]);
+				return 1;
+			})
+			.then(CommandManager.argument("message", MessageArgumentType.message())
+				.executes(ctx -> {
+					dev.nei.command.RCommand.handle(new String[] { MessageArgumentType.getMessage(ctx, "message").getString() });
+					return 1;
+				})));
 	}
 
 	public static final class PendingBind implements NeiKeybind {

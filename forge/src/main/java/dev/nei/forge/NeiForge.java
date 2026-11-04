@@ -27,6 +27,7 @@ public final class NeiForge {
 		Nei.init(platform);
 		NeiClient.init(platform);
 		NeiKeybinds.registerAll(platform);
+		platform.registerCommands();
 
 		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::clientSetup);
 		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::registerKeys);
@@ -47,6 +48,7 @@ public final class NeiForge {
 	private void clientTick(TickEvent.ClientTickEvent event) {
 		if (event.phase == TickEvent.Phase.END && MinecraftClient.getInstance().player != null) {
 			NeiKeybinds.tick();
+			dev.nei.command.RCommand.tick();
 		}
 	}
 }
