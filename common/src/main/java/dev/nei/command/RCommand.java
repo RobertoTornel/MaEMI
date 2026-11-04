@@ -41,6 +41,11 @@ public final class RCommand {
 		lastPmPlayer = player;
 	}
 
+	/** Who a reply would go to right now, for status messages. */
+	public static String lastTarget() {
+		return resolveTarget();
+	}
+
 	/** Call once per client tick so reply mode expires after five minutes of inactivity. */
 	public static void tick() {
 		if (replyModeActive && System.currentTimeMillis() > replyModeExpiryMillis) {

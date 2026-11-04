@@ -945,16 +945,19 @@ public final class CraftPlanner {
 
 	private static long producedAmount(EmiRecipe recipe, EmiStack stack) {
 		long amount = 0;
+		String key = stockKey(stack);
 		for (EmiStack output : recipe.getOutputs()) {
 			if (output == null || output.isEmpty()) {
 				continue;
 			}
-			// EMI's comparison includes NBT, and GT tool outputs carry generated tool stats that
-			// the hovered item may spell slightly differently. Fall back to the item identity.
-			if (!output.isEqual(stack) && !(isReusableTool(stack) && sameItem(output, stack))) {
-				continue;
+			// Identity is the item id, matching how stock is counted. EMI's own comparison includes
+			// NBT, and that rejected every recipe for an item whose recipes all produce a tagged
+			// variant: the Sophisticated Storage barrel the player hovered carries no woodType, so
+			// all 32 of its recipes were logged as "does not produce this stack" and the mod
+			// reported an item it could make from the materials at hand as impossible.
+			if (!key.isEmpty() && key.equals(stockKey(output))) {
+				amount = add(amount, Math.max(1, output.getAmount()));
 			}
-			amount = add(amount, Math.max(1, output.getAmount()));
 		}
 		return amount;
 	}

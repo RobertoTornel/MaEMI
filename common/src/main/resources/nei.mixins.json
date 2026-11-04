@@ -10,7 +10,8 @@
     "KeyboardMixin",
     "MouseMixin",
     "ScreenMixin",
-    "ChatMessageMixin"
+    "ChatMessageMixin",
+    "ChatCommandMixin"
   ],
   "injectors": {
     "defaultRequire": 1
