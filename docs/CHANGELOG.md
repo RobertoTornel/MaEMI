@@ -1,5 +1,87 @@
 # Changelog
 
+## 1.0.12
+
+### "Craft all" searches for the real maximum
+
+- **Ctrl+Shift+C no longer reports ingredients you are carrying.** The maximum was found by a
+  halving ladder: for a cap of 512 it tried 256, 128, 64 and 32, then gave up and returned the
+  512 plan -- the one guaranteed to be missing something. It is now a real binary search, so the
+  largest amount that can actually be crafted is what gets planned, and the answer is never the
+  request it already knew was impossible.
+- If not even one can be made, the message describes a single craft's blocker instead of the
+  wish list of a five-hundred-fold request.
+- **The "carried by the player" count is no longer doubled.** The open screen's menu also lists
+  the player's own slots, so a stack of 23 read as 46.
+
+## 1.0.11
+
+### Tools are never crafted
+
+- **A missing tool is now reported as a missing tool.** The planner treated a GregTech file or
+  hammer like any other ingredient, so a recipe that wanted a file you did not own produced a
+  crafting plan for the file instead. That is where the surprise tools came from, and clamping
+  the amount never addressed it: the tool was still a product. A tool the player does not carry
+  now stops the plan with "you need a wrought_iron_file", which is the real situation.
+- **The closing message says what was actually made.** It previously read the record after
+  clearing it and so always claimed nothing was produced -- an instrument that lied.
+
+## 1.0.9
+
+### Autocrafting actually does what it says
+
+- **A step now really crafts.** EMI's fill places the ingredients for every batch but clicks the
+  output exactly once, then reports success. A plan that asked for nine items made one and said it
+  was finished. Each batch is now filled and checked on its own.
+- **Every step is verified before the plan moves on.** The expected output is counted before and
+  after a fill; if it never arrives the step is retried and then reported as stuck, instead of
+  being counted as done. "Finished" with nothing crafted was the worst possible answer.
+- **Items you are carrying are no longer called missing.** Stock identity used to include the
+  item's NBT, so a pristine stack from a recipe never matched the tagged copy in your inventory.
+  The log shows it plainly: `missing gtceu:bronze_normal_fluid_pipe: 9 carried by the player`.
+  Items are matched by id, as EMI itself does.
+- **The message names the real obstacle.** A failed plan used to report whichever item the search
+  was standing on, usually an intermediate with a perfectly good recipe -- a steam turbine was
+  answered with "missing lv_machine_hull" seconds after that hull had been crafted. Missing
+  items are now followed down to ingredients that genuinely have no usable recipe.
+- **Repeated crafts are folded together.** A single machine planned 49 steps, 17 of them
+  identical; identical recipes are merged into one step with a batch count, and a tool is never
+  planned twice.
+
+## 1.0.8
+
+### Planning no longer freezes the game
+
+- **A plan has two seconds, not half a minute.** Exploring a GregTech-sized recipe graph could
+  take 25 seconds on the render thread, which looks like a crash. Planning now stops at a wall
+  clock budget and says the tree was too large, instead of filling in an answer it never found.
+- **Alternatives and recipes are tried in a bounded number.** One ingredient can list 144
+  interchangeable tools; walking every one of them multiplied the work for nothing, because the
+  list is already sorted best-first.
+- **"Craft all" probes a short ladder** instead of running ten full plans through a binary search.
+- **Diagnostics are capped per request.** The failure log was 60,000 lines a craft, and writing
+  it was part of the delay.
+
+## 1.0.7
+
+### Autocrafting fixes
+
+- **Tools are planned once, not once per craft.** A recipe that needs a file for every batch used
+  to plan one file per batch, so asking for ten vacuum tubes crafted five wrought iron files. A
+  reusable tool is now required exactly once no matter how many crafts depend on it.
+- **"No recipe is known for that item" is gone for items that visibly have recipes.** The planner
+  used to follow the whole recipe graph to decide whether a recipe was really an uncrafting recipe,
+  and any cycle in that graph (common in GregTech) made it throw away the genuine crafting recipe.
+  It now only rejects a recipe when one of its direct inputs is the item itself, or something
+  already being planned: the real splitting/uncrafting cases.
+- **Rejected recipes are named in the log** with the reason (does not produce this stack, not
+  craftable in this screen, consumes what it makes, uncrafting/splitting), so a report of a missing
+  recipe can be traced instead of guessed at.
+- **Your own inventory is always counted.** Stock used to be whatever EMI's handler for the open
+  screen exposed, and for a modded crafting station that slice could leave the player's items out:
+  22 tin cables in the inventory were reported missing. The player inventory is now counted
+  directly, and the screen's other slots are added on top, each slot once.
+
 ## 1.0.5
 
 ### Calculator fixes and pinning

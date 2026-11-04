@@ -26,27 +26,34 @@ import net.minecraft.util.Identifier;
  */
 public final class RecipeRegistry {
 	private static boolean initialised;
-	// GT tools carry tool NBT, so EMI's NBT-sensitive output lookup misses their crafting recipes.
-	// This index is limited to tool outputs and keyed by item id, so material variants of plates
-	// and ingots can never bleed into each other.
-	private static List<EmiRecipe> toolIndexSource;
-	private static Map<Identifier, List<EmiRecipe>> toolOutputIndex = Collections.emptyMap();
+	// EMI's output index is NBT-sensitive, so a stack that carries no NBT finds nothing when every
+	// recipe for that item produces a tagged one. Sophisticated Storage barrels are the clearest
+	// case: a pristine barrel matched no recipe at all, while the same barrel with
+	// {woodType: spruce} matched three, and the planner reported the barrel as missing. GT tools
+	// have the same problem with their tool NBT.
+	//
+	// This fallback index is keyed by item id only. That is safe because distinct GregTech
+	// materials are distinct items (tin_plate is not iron_plate); the ids differ, so no material
+	// can bleed into another. NBT variants of one item are exactly what we want to unify.
+	private static List<EmiRecipe> idIndexSource;
+	private static Map<Identifier, List<EmiRecipe>> idOutputIndex = Collections.emptyMap();
 
 	private RecipeRegistry() {
 	}
 
-	private static Map<Identifier, List<EmiRecipe>> toolOutputIndex() {
+	private static Map<Identifier, List<EmiRecipe>> idOutputIndex() {
 		List<EmiRecipe> all = EmiApi.getRecipeManager().getRecipes();
-		if (all == toolIndexSource) {
-			return toolOutputIndex;
+		if (all == idIndexSource) {
+			return idOutputIndex;
 		}
+		long startedAt = System.nanoTime();
 		Map<Identifier, List<EmiRecipe>> index = new HashMap<>();
 		for (EmiRecipe recipe : all) {
 			if (recipe == null || recipe.getOutputs() == null) {
 				continue;
 			}
 			for (EmiStack output : recipe.getOutputs()) {
-				if (output == null || output.isEmpty() || !ToolIdentity.isTool(output)) {
+				if (output == null || output.isEmpty()) {
 					continue;
 				}
 				Identifier id = output.getId();
@@ -58,9 +65,10 @@ public final class RecipeRegistry {
 		for (Map.Entry<Identifier, List<EmiRecipe>> entry : index.entrySet()) {
 			entry.setValue(List.copyOf(entry.getValue()));
 		}
-		toolIndexSource = all;
-		toolOutputIndex = index;
-		Nei.LOG.info("[MaEMI] built tool-output recipe index ({} tool items)", index.size());
+		idIndexSource = all;
+		idOutputIndex = index;
+		Nei.LOG.info("[MaEMI] built id-keyed recipe index ({} items) in {} ms", index.size(),
+			(System.nanoTime() - startedAt) / 1_000_000);
 		return index;
 	}
 
@@ -89,16 +97,20 @@ public final class RecipeRegistry {
 		}
 		try {
 			List<EmiRecipe> recipes = EmiApi.getRecipeManager().getRecipesByOutput(stack);
-			if (recipes == null) {
-				Nei.LOG.warn("[MaEMI] EMI returned a null recipe list for {}", stack);
-				return Collections.emptyList();
-			}
-			if (!recipes.isEmpty() || !ToolIdentity.isTool(stack)) {
+			if (recipes != null && !recipes.isEmpty()) {
 				return recipes;
 			}
+			// EMI compares NBT in this lookup, so a stack carrying none finds nothing when every
+			// recipe for that item produces a tagged variant. A pristine Sophisticated Storage
+			// barrel matched zero recipes while the same barrel with {woodType: spruce} matched
+			// three, and the planner called the barrel missing. Fall back to the id-keyed index:
+			// a recipe that makes this item with some NBT is still a recipe for this item.
 			Identifier id = stack.getId();
-			return id == null ? Collections.emptyList()
-				: toolOutputIndex().getOrDefault(id, Collections.emptyList());
+			if (id == null) {
+				return recipes == null ? Collections.emptyList() : recipes;
+			}
+			List<EmiRecipe> byId = idOutputIndex().getOrDefault(id, Collections.emptyList());
+			return byId.isEmpty() ? (recipes == null ? Collections.emptyList() : recipes) : byId;
 		} catch (Throwable t) {
 			Nei.LOG.warn("[MaEMI] recipe lookup failed for {}", stack, t);
 			return Collections.emptyList();
