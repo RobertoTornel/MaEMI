@@ -55,7 +55,7 @@ public final class CraftPlanner {
 	private static final int MAX_OPTIONS_SCORED = 48;
 	// Upper bound on how many candidate recipes one step examines, so a single step always fits
 	// inside a slice. Real items are far below this; the largest seen in a Monifactory log was 458.
-	private static final int MAX_CANDIDATES = 4096;
+	private static final int MAX_CANDIDATES = 1024;
 
 	private CraftPlanner() {
 	}
@@ -320,9 +320,10 @@ public final class CraftPlanner {
 		 */
 		boolean run(long deadlineNanos) {
 			while (!stack.isEmpty()) {
-				// Checking the clock every frame would cost more than the work between checks; the
-				// counter makes it a cheap, predictable amortised cost.
-				if ((++frames & 0x1F) == 0 && System.nanoTime() > deadlineNanos) {
+				// Checked every frame, because frame cost varies: a cached lookup is microseconds and a
+				// prefilt over hundreds of candidates is milliseconds. nanoTime costs nothing next to
+				// either, and checking only every n-th frame is how a slice silently grows.
+				if (System.nanoTime() > deadlineNanos) {
 					return false;
 				}
 				Frame top = stack.get(stack.size() - 1);
