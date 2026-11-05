@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.17
+
+### Better recipe choice, and the real blocker named
+
+- **Recipes that need a tool you do not own are tried last.** A recipe wanting a hammer you
+  would have to craft first is a worse plan than one that needs nothing extra, even though both
+  are "one item short". The picker now counts missing tools separately and prefers recipes
+  without them.
+- **A tool that cannot be made is named as the blocker.** When a plate needs a hammer and the
+  hammer needs plates, the plan used to report "missing wrought_iron_plate" and send you looking
+  for the wrong thing. It now says you need the hammer.
+- **The chosen recipe is logged** (`plan for X starts with Y`), so a bad pick can be pointed at
+  instead of guessed at.
+
 ## 1.0.16
 
 ### Tools are crafted again, and a slow plan no longer does nothing

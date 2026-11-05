@@ -386,6 +386,7 @@ public final class CraftPlanner {
 		private int stepsBefore;
 		private Set<String> missingBefore;
 		private boolean pathAdded;
+		private boolean reusable;
 
 		PlanFrame(EmiStack stack, long needed, int depth) {
 			this.stack = stack;
@@ -424,6 +425,12 @@ public final class CraftPlanner {
 					} else {
 						state.missing.add(describe(stack));
 					}
+					if (reusable) {
+						// A tool that could not be made is the real blocker, and saying "missing
+						// wrought_iron_plate" when the plate needs a hammer you do not have sends the
+						// player looking for the wrong thing. Name the tool.
+						state.unavailableTool = describe(stack);
+					}
 					dropPath(planner);
 					return DONE_FAIL;
 				}
@@ -447,7 +454,7 @@ public final class CraftPlanner {
 			// Tools (GT hammers, files, wire cutters...) are reused between steps: one copy satisfies
 			// any number of recipes and is never consumed by planning. The root target is exempt so
 			// "craft one more" still plans a real craft.
-			boolean reusable = depth > 0 && isReusableTool(stack);
+			reusable = depth > 0 && isReusableTool(stack);
 			long neededHere = reusable ? Math.min(needed, 1) : needed;
 			if (have >= neededHere) {
 				if (!reusable) {
@@ -748,6 +755,10 @@ public final class CraftPlanner {
 			if (byMissing != 0) {
 				return byMissing;
 			}
+			int byTool = Integer.compare(a.toolShortage(), b.toolShortage());
+			if (byTool != 0) {
+				return byTool;
+			}
 			boolean vanillaA = isVanillaCrafting(a.recipe());
 			boolean vanillaB = isVanillaCrafting(b.recipe());
 			if (vanillaA != vanillaB) {
@@ -874,13 +885,14 @@ public final class CraftPlanner {
 	private static RecipeOption estimate(EmiRecipe recipe, EmiStack stack, long needed, State state, Set<String> path) {
 		long perCraft = producedAmount(recipe, stack);
 		if (perCraft <= 0) {
-			return new RecipeOption(recipe, Integer.MAX_VALUE, Integer.MAX_VALUE);
+			return new RecipeOption(recipe, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
 		}
 		long have = state.stock.getOrDefault(stockKey(stack), 0L);
 		long shortfall = Math.max(0, needed - have);
 		long batches = shortfall == 0 ? 1 : shortfall / perCraft + (shortfall % perCraft == 0 ? 0 : 1);
 		int missing = 0;
 		int unreachable = 0;
+		int toolShortage = 0;
 		for (EmiIngredient input : recipe.getInputs()) {
 			if (input == null || input.isEmpty()) {
 				continue;
@@ -891,9 +903,14 @@ public final class CraftPlanner {
 				if (required <= 0 || !canSatisfy(input, required, state, path)) {
 					unreachable++;
 				}
+				if (isToolIngredient(input)) {
+					// A recipe that needs a hammer you do not own is a worse plan than one that needs
+					// nothing extra, even though both are "one item short".
+					toolShortage++;
+				}
 			}
 		}
-		return new RecipeOption(recipe, unreachable, missing);
+		return new RecipeOption(recipe, unreachable, missing, toolShortage);
 	}
 
 	private static boolean available(EmiIngredient input, long required, State state) {
@@ -1724,6 +1741,12 @@ public final class CraftPlanner {
 	}
 
 	private static CraftPlan finishPlan(EmiStack target, int requested, State state) {
+		if (state.debugLogs > 0 && !state.steps.isEmpty()) {
+			state.debugLogs--;
+			CraftStep first = state.steps.get(0);
+			Nei.LOG.info("[MaEMI] plan for {} starts with {} x{} ({} step(s) total)", describe(target),
+				first.recipe().getId(), first.batches(), state.steps.size());
+		}
 		List<String> missing = new ArrayList<>(state.missing);
 		if (!state.timedOut) {
 			explainMissing(missing, state);
@@ -1801,6 +1824,21 @@ public final class CraftPlanner {
 		}
 	}
 
-	private record RecipeOption(EmiRecipe recipe, int unreachable, int missing) {
+	private record RecipeOption(EmiRecipe recipe, int unreachable, int missing, int toolShortage) {
+	}
+
+	/** True when every alternative for this ingredient is a tool. */
+	private static boolean isToolIngredient(EmiIngredient input) {
+		boolean any = false;
+		for (EmiStack candidate : input.getEmiStacks()) {
+			if (candidate == null || candidate.isEmpty()) {
+				continue;
+			}
+			if (!ToolIdentity.isTool(candidate)) {
+				return false;
+			}
+			any = true;
+		}
+		return any;
 	}
 }
