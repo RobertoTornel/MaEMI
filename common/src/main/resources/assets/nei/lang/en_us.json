@@ -64,6 +64,7 @@
 	"nei.utility.magnet": "Magnet (unavailable)",
 	"nei.utility.chunk": "Chunk loader overlay (unavailable)",
 	"nei.autocraft.plan": "Craft plan",
+  "nei.autocraft.planning": "EMI: working out the plan...",
 	"nei.autocraft.wrong_screen": "No recipe for that item can be made in this screen. Open the crafting station it needs.",
 	"nei.autocraft.no_recipe": "EMI: no recipe is known for that item.",
 	"nei.autocraft.missing": "EMI: cannot craft this yet, missing: %s",

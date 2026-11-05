@@ -49,6 +49,18 @@ public final class AutoCraftService {
 	private static long verifyBefore;
 	private static int verifyWaits;
 	private static boolean verifying;
+	// A plan being computed across ticks. Planning is a search over the recipe graph, and a big
+	// modpack makes it large; doing it in one call is what froze the window.
+	private static CraftPlanner.Job planJob;
+	private static EmiStack jobTarget = EmiStack.EMPTY;
+	private static int jobAmount;
+	private static long jobStartedAt;
+	/**
+	 * Work allowed per client tick. A tick is 50 ms and a frame 16; five milliseconds cannot freeze
+	 * the game, and it is enough that a normal plan (tens of milliseconds of work) lands in about
+	 * a second instead of making the player sit through a progress bar.
+	 */
+	private static final long PLAN_SLICE_NANOS = 5_000_000L;
 	// EMI's fill places the ingredients for every batch but clicks the output exactly once, so a
 	// step of "craft nine" produces one item and still reports success. MaEMI therefore runs the
 	// fill once per batch and checks each one, which is what makes the batch count mean anything.
@@ -105,14 +117,27 @@ public final class AutoCraftService {
 			return;
 		}
 		java.util.Map<String, Long> stock = CraftPlanner.stockForScreen(screen, recipes);
-		CraftPlan candidate;
-		if (amount <= 0) {
-			int cap = Math.min(512, Math.max(1, dev.nei.config.NeiConfig.get().autocraft.maxCrafts));
-			candidate = CraftPlanner.planAll(target, cap, fillable, stock);
-		} else {
-			candidate = CraftPlanner.planAdditional(target, amount, fillable, stock);
-		}
-		Nei.LOG.info("[MaEMI] autocraft planning took {} ms", (System.nanoTime() - startedAt) / 1_000_000);
+		int cap = Math.min(512, Math.max(1, dev.nei.config.NeiConfig.get().autocraft.maxCrafts));
+		// A second press replaces the request rather than running two planners against stale stock.
+		cancelPlanning();
+		// Start the plan and return. The work is spread over the following ticks: a large modpack's
+		// recipe graph used to hold the render thread for up to 25 seconds here, which is the whole
+		// reason the game appeared to freeze.
+		planJob = CraftPlanner.job(target, amount, cap, fillable, stock);
+		jobTarget = target;
+		jobAmount = amount;
+		jobStartedAt = startedAt;
+		message(Text.translatable("nei.autocraft.planning"));
+	}
+
+	/** Stops a plan that is still being computed, if any. */
+	private static void cancelPlanning() {
+		planJob = null;
+		jobTarget = EmiStack.EMPTY;
+		jobAmount = 0;
+	}
+	private static void startCraft(EmiStack target, int amount, CraftPlan candidate) {
+		MinecraftClient client = MinecraftClient.getInstance();
 		Nei.LOG.info("[MaEMI] autocraft {} x{}: {} step(s), missing {}{}",
 			dev.nei.util.StackIO.key(target), amount, candidate.steps().size(), candidate.missing(),
 			candidate.timedOut() ? " (ran out of planning time)" : "");
@@ -166,7 +191,32 @@ public final class AutoCraftService {
 		}
 	}
 
+	/**
+	 * Spends one slice of the current planning job. When it finishes, the result is handled exactly
+	 * as a synchronous plan used to be, so the rest of the feature is unchanged.
+	 */
+	private static void advancePlanning() {
+		if (!(MinecraftClient.getInstance().currentScreen instanceof HandledScreen)) {
+			// The screen the plan is being made for is gone; its result would be unusable.
+			cancelPlanning();
+			return;
+		}
+		if (planJob.tick(PLAN_SLICE_NANOS)) {
+			CraftPlan candidate = planJob.result();
+			long took = (System.nanoTime() - jobStartedAt) / 1_000_000;
+			Nei.LOG.info("[MaEMI] autocraft planning took {} ms over {} probe(s)", took, planJob.probes() + 1);
+			EmiStack target = jobTarget;
+			int amount = jobAmount;
+			planJob = null;
+			startCraft(target, amount, candidate);
+		}
+	}
+
 	public static void tick() {
+		if (planJob != null) {
+			advancePlanning();
+			return;
+		}
 		if (plan == null) {
 			return;
 		}
@@ -395,6 +445,7 @@ public final class AutoCraftService {
 	}
 
 	public static void cancel() {
+		cancelPlanning();
 		returnCraftingItems();
 		resetAe2();
 		resetVerification();
@@ -507,7 +558,7 @@ public final class AutoCraftService {
 	}
 
 	public static boolean isCrafting() {
-		return plan != null;
+		return plan != null || planJob != null;
 	}
 
 	public static void requestCraftTree() {

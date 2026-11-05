@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.15
+
+### Planning can no longer freeze the game
+
+- **The planner is now resumable.** Planning walks the recipe graph: a recipe's inputs, their
+  alternatives, and back. That walk used to be recursion, so it had to finish inside one call,
+  which is exactly why a big modpack could hold the render thread for 25 seconds. The same three
+  steps are now frames on an explicit stack, so the walk can be paused between any two of them
+  and resumed on the next client tick.
+- **Five milliseconds of work per tick, no more.** A tick is 50 ms and a frame 16, so the game
+  cannot stall; a request now shows "working out the plan..." and completes on its own. A
+  normal item takes about a second, and the answer is identical to before.
+- **Total work is bounded too**, at 1.5 s; past that the mod says the recipe tree was too large
+  rather than spinning.
+- **Candidate recipes are filtered once per item, not once per parent.** Every parent that needs
+  the same ingredient re-checked the same hundreds of recipes; the stock-independent part of
+  that check is now cached per plan.
+
 ## 1.0.12
 
 ### "Craft all" searches for the real maximum

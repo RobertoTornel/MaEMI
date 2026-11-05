@@ -43,336 +43,616 @@ public final class CraftPlanner {
 	private static final int MAX_OPTIONS_TRIED = 8;
 	// Likewise for recipes of one item: the sorted list already puts usable ones first.
 	private static final int MAX_RECIPES_TRIED = 12;
-	// Hard wall-clock budget for one request. A modpack's recipe graph can blow up
-	// combinatorially; freezing the render thread for 25 seconds is worse than giving up and
-	// saying so. Ordinary plans finish in a few milliseconds.
-	private static final long PLAN_BUDGET_NANOS = 2_000_000_000L;
 	// Diagnostic blocks are useful but the logging itself is part of the freeze: one failed plan
 	// wrote 60k log lines. Cap it per request.
 	private static final int DEBUG_LOG_LIMIT = 40;
 	// "Craft all" binary-searches the largest amount; log2(512) is nine probes, which leaves room
 	// for the odd extra without turning one key press into dozens of full plans.
 	private static final int MAX_ALL_PROBES = 12;
+	// How many alternatives of one ingredient get a full score. Scoring is a recipe lookup per
+	// alternative and a GregTech tag can list hundreds; only the first few are ever tried, so a
+	// bounded score keeps one planning step short enough to fit inside a single slice.
+	private static final int MAX_OPTIONS_SCORED = 48;
+	// Upper bound on how many candidate recipes one step examines, so a single step always fits
+	// inside a slice. Real items are far below this; the largest seen in a Monifactory log was 458.
+	private static final int MAX_CANDIDATES = 4096;
 
 	private CraftPlanner() {
 	}
 
-	public static CraftPlan plan(EmiStack target, int amount) {
-		int requested = Math.max(1, amount);
-		if (target == null || target.isEmpty()) {
-			return new CraftPlan(EmiStack.EMPTY, requested, List.of(), List.of("nothing selected"), false, List.of());
-		}
-		State state = new State(countInventory(), recipe -> true, deadline());
-		state.hint = ToolIdentity.materialOf(target);
-		if (target.getId() != null) {
-			state.targetNamespace = target.getId().getNamespace();
-		}
-		int maxDepth = Math.max(1, NeiConfig.get().autocraft.maxDepth);
-		plan(target, requested, 0, state, new HashSet<>(), maxDepth);
-		return finishPlan(target, requested, state);
-	}
-
 	/**
-	 * Plans {@code amount} crafts <em>on top of</em> what the player already carries, so pressing C
-	 * on a stack you own still does something instead of silently deciding you have enough.
+	 * Starts planning {@code amount} crafts on top of what the player already carries. Pass {@code 0}
+	 * for "as many as the stock allows".
+	 *
+	 * <p>Planning never blocks: {@link Job#tick(long)} advances it by a bounded slice of work and
+	 * returns, so one request can be spread over as many client ticks as it needs. The previous
+	 * implementation recursed until it had an answer and held the render thread for up to 25 seconds
+	 * on a large modpack. A wall-clock budget only chose where to give up; it never stopped the stall,
+	 * and it could not: recursion cannot be paused half-way.</p>
 	 */
-	public static CraftPlan planAdditional(EmiStack target, int amount) {
-		return planAdditional(target, amount, recipe -> true);
-	}
-
-	/**
-	 * Plans against an explicit stock snapshot. Autocrafting uses this so items exposed by the
-	 * screen's EMI handler (AE2 network storage, for example) count as available instead of only
-	 * the player inventory.
-	 */
-	public static CraftPlan planAdditional(EmiStack target, int amount, Predicate<EmiRecipe> allowed,
+	public static Job job(EmiStack target, int amount, int cap, Predicate<EmiRecipe> allowed,
 			Map<String, Long> stock) {
-		return planAdditional(target, amount, allowed, stock, deadline());
+		return new Job(target, amount, cap, allowed, stock);
 	}
 
-	private static CraftPlan planAdditional(EmiStack target, int amount, Predicate<EmiRecipe> allowed,
-			Map<String, Long> stock, long deadline) {
-		int requested = Math.max(1, amount);
-		if (target == null || target.isEmpty()) {
-			return new CraftPlan(EmiStack.EMPTY, requested, List.of(), List.of("nothing selected"), false, List.of());
-		}
-		State state = new State(new HashMap<>(stock), allowed, deadline);
-		state.hint = ToolIdentity.materialOf(target);
-		if (target.getId() != null) {
-			state.targetNamespace = target.getId().getNamespace();
-		}
-		long have = state.stock.getOrDefault(stockKey(target), 0L);
-		int maxDepth = Math.max(1, NeiConfig.get().autocraft.maxDepth);
-		plan(target, have + requested, 0, state, new HashSet<>(), maxDepth);
-		return finishPlan(target, requested, state);
-	}
+	/** One request being planned across client ticks. */
+	public static final class Job {
+		/**
+		 * Total compute allowed for one request, spread over ticks. Past this the answer is reported
+		 * as "the tree was too large" rather than spinning forever.
+		 */
+		private static final long TOTAL_BUDGET_NANOS = 1_500_000_000L;
 
-	/**
-	 * Finds the largest amount that can actually be crafted, then returns that plan. Used by
-	 * Ctrl+Shift+C. The cap keeps a request bounded to the configured maximum and the planner's
-	 * step limit.
-	 */
-	public static CraftPlan planAll(EmiStack target, int cap, Predicate<EmiRecipe> allowed,
-			Map<String, Long> stock) {
-		int limit = Math.max(1, cap);
-		long budget = deadline();
-		CraftPlan atLimit = planAdditional(target, limit, allowed, stock, budget);
-		if (atLimit.missing().isEmpty()) {
-			return atLimit;
+		private final EmiStack target;
+		private final int requested;
+		private final int cap;
+		private final Predicate<EmiRecipe> allowed;
+		private final Map<String, Long> stock;
+		private final long startedAt = System.nanoTime();
+
+		private Planner planner;
+		private int amount;
+		private int phase;
+		private int low;
+		private int high;
+		private int probes;
+		private CraftPlan best;
+		private CraftPlan result;
+		private boolean done;
+		private boolean gaveUp;
+
+		private Job(EmiStack target, int amount, int cap, Predicate<EmiRecipe> allowed,
+				Map<String, Long> stock) {
+			this.target = target;
+			this.requested = amount <= 0 ? 0 : Math.max(1, amount);
+			this.cap = Math.max(1, cap);
+			this.allowed = allowed;
+			this.stock = stock;
+			if (target == null || target.isEmpty()) {
+				this.result = new CraftPlan(EmiStack.EMPTY, Math.max(1, amount), List.of(),
+					List.of("nothing selected"), false, List.of());
+				this.done = true;
+			}
 		}
-		// Search for the largest amount that really can be made. A halving ladder used to stand
-		// in for this and was simply wrong: for a cap of 512 it probed 256, 128, 64 and 32, then
-		// gave up and returned the 512 plan -- the one guaranteed to be missing ingredients. That
-		// is why "craft all" reported items the player was carrying.
-		CraftPlan best = null;
-		int low = 1;
-		int high = limit - 1;
-		int probes = 0;
-		while (low <= high && probes < MAX_ALL_PROBES && System.nanoTime() - budget < 0) {
-			int mid = (low + high) >>> 1;
-			CraftPlan candidate = planAdditional(target, mid, allowed, stock, budget);
-			probes++;
-			if (candidate.missing().isEmpty()) {
-				best = candidate;
-				low = mid + 1;
-			} else {
-				if (candidate.timedOut()) {
+
+		/**
+		 * Advances the request by at most {@code budgetNanos} of work.
+		 *
+		 * @return true when the job is finished; false when it needs another tick
+		 */
+		public boolean tick(long budgetNanos) {
+			if (done) {
+				return true;
+			}
+			long deadline = System.nanoTime() + Math.max(200_000L, budgetNanos);
+			while (!done) {
+				if (System.nanoTime() - startedAt > TOTAL_BUDGET_NANOS) {
+					// Give up honestly: keep whatever the current attempt has and say the tree was
+					// too large, instead of holding the caller while the graph explodes.
+					gaveUp = true;
+					State state = planner == null ? null : planner.state;
+					if (state != null) {
+						state.timedOut = true;
+					}
+					result = planner == null ? result : finishPlan(target, amount, planner.state);
+					if (result == null) {
+						result = new CraftPlan(target, Math.max(1, amount), List.of(), List.of(), true,
+							List.of());
+					}
+					done = true;
 					break;
 				}
-				high = mid - 1;
-			}
-		}
-		if (best != null) {
-			return best;
-		}
-		// Not even one can be made here; report the blocker for a single craft, which is the
-		// honest answer, rather than the wish list of a five-hundred-fold request.
-		return planAdditional(target, 1, allowed, stock, budget);
-	}
-
-	/**
-	 * As above, but only recipes the given filter accepts are considered. Autocrafting uses this to
-	 * keep the plan to recipes the currently open screen can actually fill.
-	 */
-	public static CraftPlan planAdditional(EmiStack target, int amount, Predicate<EmiRecipe> allowed) {
-		return planAdditional(target, amount, allowed, countInventory());
-	}
-
-	/**
-	 * Reserves {@code needed} from the stock, crafting the shortfall if possible. The stock is the
-	 * single source of truth for both inventory items and outputs of earlier steps, so an ingredient
-	 * shared by several parents is counted (and consumed) once per parent.
-	 */
-	private static boolean plan(EmiStack stack, long needed, int depth, State state, Set<String> path, int maxDepth) {
-		if (needed <= 0) {
-			return true;
-		}
-		String key = stockKey(stack);
-		long have = state.stock.getOrDefault(key, 0L);
-		// Tools (GT hammers, files, wire cutters...) are reused between steps: one copy satisfies
-		// any number of recipes and is never consumed by planning. The root target is exempt so
-		// "craft one more" still plans a real craft.
-		boolean reusable = depth > 0 && isReusableTool(stack);
-		long neededHere = reusable ? Math.min(needed, 1) : needed;
-		if (have >= neededHere) {
-			if (!reusable) {
-				state.stock.put(key, have - neededHere);
-			}
-			return true;
-		}
-		if (path.contains(key)) {
-			// A cycle back to an item already being planned along this path cannot resolve it.
-			return false;
-		}
-		if (++state.attempts > MAX_ATTEMPTS || depth >= maxDepth || state.steps.size() >= MAX_STEPS) {
-			state.missing.add(describe(stack));
-			return false;
-		}
-		if (outOfTime(state)) {
-			state.timedOut = true;
-			state.missing.add(describe(stack));
-			return false;
-		}
-		if (reusable) {
-			// A tool is a tool, not a product. When a recipe needs a file and there is none, the
-			// honest answer is "you have no file", not a plan that manufactures four of them:
-			// that is the "it keeps crafting files" report, and no amount of clamping fixed it
-			// because the planner was still treating the file as something to obtain.
-			state.unavailableTool = describe(stack);
-			state.missing.add(describe(stack));
-			return false;
-		}
-		path.add(key);
-		try {
-			List<RecipeOption> options = recipesFor(stack, needed, state, path);
-			if (options.isEmpty()) {
-				state.missing.add(describe(stack));
-				return false;
-			}
-			// Try recipes in preference order. Failed attempts are fully rolled back; if none works,
-			// keep the missing leaves of the attempt that got furthest (fewest unresolved inputs).
-			Set<String> bestFailure = null;
-			int bestStepsPlanned = -1;
-			int tried = 0;
-			for (RecipeOption option : options) {
-				if (tried++ >= MAX_RECIPES_TRIED) {
+				if (planner == null && !startNext()) {
 					break;
 				}
-				Map<String, Long> stockBefore = new HashMap<>(state.stock);
-				int stepsBefore = state.steps.size();
-				Set<String> missingBefore = new LinkedHashSet<>(state.missing);
-				if (craft(option.recipe(), stack, needed, depth, state, path, maxDepth)) {
+				if (!planner.run(deadline)) {
+					return false;
+				}
+				CraftPlan plan = finishPlan(target, amount, planner.state);
+				planner = null;
+				accept(plan);
+				if (System.nanoTime() > deadline) {
+					return done;
+				}
+			}
+			return done;
+		}
+
+		public boolean isDone() {
+			return done;
+		}
+
+		/** Whether the search was abandoned for taking too long, rather than failing on its merits. */
+		public boolean gaveUp() {
+			return gaveUp;
+		}
+
+		public CraftPlan result() {
+			return result;
+		}
+
+		/** How many separate plans the "craft all" search ran, for the log. */
+		public int probes() {
+			return probes;
+		}
+
+		private boolean startNext() {
+			switch (phase) {
+				case 0:
+					startPlan(requested > 0 ? requested : cap);
 					return true;
+				case 1:
+					if (low <= high && probes < MAX_ALL_PROBES) {
+						startPlan((low + high) >>> 1);
+						return true;
+					}
+					phase = 2;
+					return false;
+				case 2:
+					// Not even one can be made here; report the blocker for a single craft, which is
+					// the honest answer, rather than the wish list of a five-hundred-fold request.
+					startPlan(1);
+					return true;
+				default:
+					done = true;
+					return false;
+			}
+		}
+
+		private void startPlan(int crafts) {
+			amount = crafts;
+			State state = new State(new HashMap<>(stock), allowed);
+			state.hint = ToolIdentity.materialOf(target);
+			if (target.getId() != null) {
+				state.targetNamespace = target.getId().getNamespace();
+			}
+			long have = state.stock.getOrDefault(stockKey(target), 0L);
+			planner = new Planner(state, Math.max(1, NeiConfig.get().autocraft.maxDepth));
+			planner.push(new PlanFrame(target, have + Math.max(1, crafts), 0));
+		}
+
+		private void accept(CraftPlan plan) {
+			if (requested > 0) {
+				result = plan;
+				done = true;
+				return;
+			}
+			switch (phase) {
+				case 0 -> {
+					if (plan.missing().isEmpty()) {
+						result = plan;
+						done = true;
+					} else {
+						phase = 1;
+						low = 1;
+						high = cap - 1;
+						probes = 0;
+						best = null;
+					}
+				}
+				case 1 -> {
+					probes++;
+					if (plan.missing().isEmpty()) {
+						best = plan;
+						low = amount + 1;
+					} else if (plan.timedOut()) {
+						high = low - 1;
+					} else {
+						high = amount - 1;
+					}
+					if (low > high || probes >= MAX_ALL_PROBES) {
+						if (best != null) {
+							result = best;
+							done = true;
+						} else {
+							phase = 2;
+						}
+					}
+				}
+				default -> {
+					result = plan;
+					done = true;
+				}
+			}
+		}
+	}
+
+	// ---------------------------------------------------------------------------------------------
+	// Frames: the recursive descent written so it can be paused.
+	//
+	// plan() looked at a recipe, craft() looked at its inputs, and planInput() looked at the
+	// alternatives for one input; together they form a tree walk. Keeping that as recursion means the
+	// walk must run to completion in one call, which is exactly the freeze. The same three steps are
+	// therefore frames on an explicit stack: a frame either finishes with an answer or pushes a child
+	// and yields, and the caller can stop between any two frames.
+	// ---------------------------------------------------------------------------------------------
+
+	private static final int YIELD = 0;
+	private static final int DONE_OK = 1;
+	private static final int DONE_FAIL = 2;
+
+	private abstract static class Frame {
+		private boolean hasChild;
+		private boolean childOk;
+
+		/** Advances one step: pushes a child and returns {@link #YIELD}, or finishes. */
+		abstract int step(Planner planner);
+
+		final void childDone(boolean ok) {
+			this.hasChild = true;
+			this.childOk = ok;
+		}
+
+		final boolean hasChild() {
+			return hasChild;
+		}
+
+		final boolean childOk() {
+			return childOk;
+		}
+
+		final void clearChild() {
+			hasChild = false;
+		}
+	}
+
+	/** Walks the frame stack within a deadline, and can be resumed exactly where it stopped. */
+	static final class Planner {
+		final State state;
+		final Set<String> path = new HashSet<>();
+		final int maxDepth;
+		private final ArrayList<Frame> stack = new ArrayList<>();
+		private long frames;
+
+		Planner(State state, int maxDepth) {
+			this.state = state;
+			this.maxDepth = maxDepth;
+		}
+
+		void push(Frame frame) {
+			stack.add(frame);
+		}
+
+		/**
+		 * Runs frames until the stack empties or the deadline passes.
+		 *
+		 * @return true if the walk finished, false if it needs more time
+		 */
+		boolean run(long deadlineNanos) {
+			while (!stack.isEmpty()) {
+				// Checking the clock every frame would cost more than the work between checks; the
+				// counter makes it a cheap, predictable amortised cost.
+				if ((++frames & 0x1F) == 0 && System.nanoTime() > deadlineNanos) {
+					return false;
+				}
+				Frame top = stack.get(stack.size() - 1);
+				int outcome = top.step(this);
+				if (outcome == YIELD) {
+					continue;
+				}
+				stack.remove(stack.size() - 1);
+				if (stack.isEmpty()) {
+					return true;
+				}
+				stack.get(stack.size() - 1).childDone(outcome == DONE_OK);
+			}
+			return true;
+		}
+	}
+
+	/** {@code plan()}: obtain {@code needed} of one stack, crafting the shortfall. */
+	private static final class PlanFrame extends Frame {
+		private final EmiStack stack;
+		private final long needed;
+		private final int depth;
+
+		private boolean entered;
+		private String key;
+		private List<RecipeOption> options;
+		private int index;
+		private int tried;
+		private Set<String> bestFailure;
+		private int bestSteps = -1;
+		private Map<String, Long> stockBefore;
+		private int stepsBefore;
+		private Set<String> missingBefore;
+		private boolean pathAdded;
+
+		PlanFrame(EmiStack stack, long needed, int depth) {
+			this.stack = stack;
+			this.needed = needed;
+			this.depth = depth;
+		}
+
+		@Override
+		int step(Planner planner) {
+			State state = planner.state;
+			if (hasChild()) {
+				clearChild();
+				if (childOk()) {
+					dropPath(planner);
+					return DONE_OK;
 				}
 				int stepsPlanned = state.steps.size() - stepsBefore;
 				Set<String> failure = new LinkedHashSet<>(state.missing);
 				restore(state, stockBefore, stepsBefore, missingBefore);
-				if (bestFailure == null || stepsPlanned > bestStepsPlanned) {
+				if (bestFailure == null || stepsPlanned > bestSteps) {
 					bestFailure = failure;
-					bestStepsPlanned = stepsPlanned;
+					bestSteps = stepsPlanned;
 				}
 			}
-			if (bestFailure != null && !bestFailure.isEmpty()) {
-				state.missing.addAll(bestFailure);
-			} else {
+			if (!entered) {
+				entered = true;
+				int outcome = enter(planner);
+				if (outcome != YIELD) {
+					return outcome;
+				}
+			}
+			while (true) {
+				if (index >= options.size() || tried >= MAX_RECIPES_TRIED) {
+					if (bestFailure != null && !bestFailure.isEmpty()) {
+						state.missing.addAll(bestFailure);
+					} else {
+						state.missing.add(describe(stack));
+					}
+					dropPath(planner);
+					return DONE_FAIL;
+				}
+				RecipeOption option = options.get(index++);
+				tried++;
+				stockBefore = new HashMap<>(state.stock);
+				stepsBefore = state.steps.size();
+				missingBefore = new LinkedHashSet<>(state.missing);
+				planner.push(new CraftFrame(option.recipe(), stack, needed, depth));
+				return YIELD;
+			}
+		}
+
+		private int enter(Planner planner) {
+			State state = planner.state;
+			if (needed <= 0) {
+				return DONE_OK;
+			}
+			key = stockKey(stack);
+			long have = state.stock.getOrDefault(key, 0L);
+			// Tools (GT hammers, files, wire cutters...) are reused between steps: one copy satisfies
+			// any number of recipes and is never consumed by planning. The root target is exempt so
+			// "craft one more" still plans a real craft.
+			boolean reusable = depth > 0 && isReusableTool(stack);
+			long neededHere = reusable ? Math.min(needed, 1) : needed;
+			if (have >= neededHere) {
+				if (!reusable) {
+					state.stock.put(key, have - neededHere);
+				}
+				return DONE_OK;
+			}
+			if (planner.path.contains(key)) {
+				// A cycle back to an item already being planned along this path cannot resolve it.
+				return DONE_FAIL;
+			}
+			if (++state.attempts > MAX_ATTEMPTS || depth >= planner.maxDepth
+					|| state.steps.size() >= MAX_STEPS) {
 				state.missing.add(describe(stack));
+				return DONE_FAIL;
 			}
-			return false;
-		} finally {
-			path.remove(key);
+			if (reusable) {
+				// A tool is a tool, not a product. When a recipe needs a file and there is none, the
+				// honest answer is "you have no file", not a plan that manufactures four of them.
+				state.unavailableTool = describe(stack);
+				state.missing.add(describe(stack));
+				return DONE_FAIL;
+			}
+			planner.path.add(key);
+			pathAdded = true;
+			options = recipesFor(stack, needed, state, planner.path);
+			if (options.isEmpty()) {
+				state.missing.add(describe(stack));
+				dropPath(planner);
+				return DONE_FAIL;
+			}
+			index = 0;
+			tried = 0;
+			return YIELD;
+		}
+
+		private void dropPath(Planner planner) {
+			if (pathAdded) {
+				planner.path.remove(key);
+				pathAdded = false;
+			}
 		}
 	}
 
-	private static boolean craft(EmiRecipe recipe, EmiStack stack, long needed, int depth, State state,
-			Set<String> path, int maxDepth) {
-		long perCraft = producedAmount(recipe, stack);
-		if (perCraft <= 0) {
-			return false;
-		}
-		String key = stockKey(stack);
-		long have = state.stock.getOrDefault(key, 0L);
-		// A reusable tool is required once, not once per craft: five recipes that each ask for a
-		// file must plan one file, not five. Without this the planner stocked a pile of tools and
-		// then crafted all of them.
-		boolean reusable = depth > 0 && isReusableTool(stack);
-		long neededHere = reusable ? Math.min(needed, 1) : needed;
-		long shortfall = neededHere - have;
-		if (shortfall <= 0) {
-			return true;
-		}
-		long batches = shortfall / perCraft + (shortfall % perCraft == 0 ? 0 : 1);
-		if (batches <= 0 || batches > Integer.MAX_VALUE) {
-			state.missing.add(describe(stack));
-			return false;
-		}
-		for (EmiIngredient input : recipe.getInputs()) {
-			// Shaped recipes can carry empty grid slots; they are not ingredients to obtain.
-			if (input == null || input.isEmpty()) {
-				continue;
-			}
-			long perInput = Math.max(1, input.getAmount());
-			long required = multiply(perInput, batches);
-			if (required <= 0) {
-				state.missing.add(describe(input));
-				return false;
-			}
-			if (!planInput(input, required, depth + 1, state, path, maxDepth)) {
-				return false;
-			}
-		}
-		long produced = multiply(perCraft, batches);
-		if (produced <= 0 || state.steps.size() >= MAX_STEPS) {
-			state.missing.add(describe(stack));
-			return false;
-		}
-		long total = add(state.stock.getOrDefault(key, 0L), produced);
-		if (total < neededHere) {
-			state.missing.add(describe(stack));
-			return false;
-		}
-		state.stock.put(key, total - (reusable ? 0 : neededHere));
-		// One step carrying the batch count. Execution fills once per batch, so a tool ingredient is
-		// reused across them and the plan no longer repeats the same recipe nine times.
-		state.steps.add(new CraftStep(recipe, (int) batches));
-		return true;
-	}
+	/** {@code craft()}: run one recipe, obtaining each of its inputs first. */
+	private static final class CraftFrame extends Frame {
+		private final EmiRecipe recipe;
+		private final EmiStack stack;
+		private final long needed;
+		private final int depth;
 
-	private static boolean hasToolInput(EmiRecipe recipe) {
-		for (EmiIngredient input : recipe.getInputs()) {
-			if (input == null || input.isEmpty()) {
-				continue;
-			}
-			for (EmiStack candidate : input.getEmiStacks()) {
-				if (ToolIdentity.isTool(candidate)) {
-					return true;
+		private boolean entered;
+		private List<EmiIngredient> inputs;
+		private int index;
+		private long batches;
+		private String key;
+		private boolean reusable;
+		private long neededHere;
+		private long perCraft;
+
+		CraftFrame(EmiRecipe recipe, EmiStack stack, long needed, int depth) {
+			this.recipe = recipe;
+			this.stack = stack;
+			this.needed = needed;
+			this.depth = depth;
+		}
+
+		@Override
+		int step(Planner planner) {
+			State state = planner.state;
+			if (hasChild()) {
+				clearChild();
+				if (!childOk()) {
+					return DONE_FAIL;
 				}
 			}
+			if (!entered) {
+				entered = true;
+				perCraft = producedAmount(recipe, stack);
+				if (perCraft <= 0) {
+					return DONE_FAIL;
+				}
+				key = stockKey(stack);
+				long have = state.stock.getOrDefault(key, 0L);
+				// A reusable tool is required once, not once per craft: five recipes that each ask
+				// for a file must plan one file, not five.
+				reusable = depth > 0 && isReusableTool(stack);
+				neededHere = reusable ? Math.min(needed, 1) : needed;
+				long shortfall = neededHere - have;
+				if (shortfall <= 0) {
+					return DONE_OK;
+				}
+				batches = shortfall / perCraft + (shortfall % perCraft == 0 ? 0 : 1);
+				if (batches <= 0 || batches > Integer.MAX_VALUE) {
+					state.missing.add(describe(stack));
+					return DONE_FAIL;
+				}
+				inputs = recipe.getInputs();
+				index = 0;
+			}
+			while (true) {
+				EmiIngredient input = null;
+				while (index < inputs.size()) {
+					EmiIngredient candidate = inputs.get(index++);
+					// Shaped recipes can carry empty grid slots; they are not ingredients to obtain.
+					if (candidate != null && !candidate.isEmpty()) {
+						input = candidate;
+						break;
+					}
+				}
+				if (input == null) {
+					long produced = multiply(perCraft, batches);
+					if (produced <= 0 || state.steps.size() >= MAX_STEPS) {
+						state.missing.add(describe(stack));
+						return DONE_FAIL;
+					}
+					long total = add(state.stock.getOrDefault(key, 0L), produced);
+					if (total < neededHere) {
+						state.missing.add(describe(stack));
+						return DONE_FAIL;
+					}
+					state.stock.put(key, total - (reusable ? 0 : neededHere));
+					// One step carrying the batch count. Execution fills once per batch, so a tool
+					// ingredient is reused across them and the plan does not repeat the same recipe.
+					state.steps.add(new CraftStep(recipe, (int) batches));
+					return DONE_OK;
+				}
+				long required = multiply(Math.max(1, input.getAmount()), batches);
+				if (required <= 0) {
+					state.missing.add(describe(input));
+					return DONE_FAIL;
+				}
+				planner.push(new InputFrame(input, required, depth + 1));
+				return YIELD;
+			}
 		}
-		return false;
 	}
 
-	private static boolean planInput(EmiIngredient input, long needed, int depth, State state,
-			Set<String> path, int maxDepth) {
-		List<EmiStack> options = inputOptions(input, needed, state, path);
-		if (options.isEmpty()) {
-			state.missing.add(describe(input));
-			return false;
+	/** {@code planInput()}: satisfy one ingredient by any of its interchangeable stacks. */
+	private static final class InputFrame extends Frame {
+		private final EmiIngredient input;
+		private final long needed;
+		private final int depth;
+
+		private boolean entered;
+		private List<EmiStack> options;
+		private int index;
+		private int tried;
+		private Set<String> bestFailure;
+		private int bestSteps = -1;
+		private Map<String, Long> stockBefore;
+		private int stepsBefore;
+		private Set<String> missingBefore;
+
+		InputFrame(EmiIngredient input, long needed, int depth) {
+			this.input = input;
+			this.needed = needed;
+			this.depth = depth;
 		}
-		if (options.size() > 1 && state.debugLogs > 0 && path.size() <= 4) {
-			state.debugLogs--;
-			List<String> keys = new ArrayList<>();
-			for (int i = 0; i < options.size() && i < 8; i++) {
-				keys.add(stockKey(options.get(i)));
+
+		@Override
+		int step(Planner planner) {
+			State state = planner.state;
+			if (hasChild()) {
+				clearChild();
+				if (childOk()) {
+					return DONE_OK;
+				}
+				int stepsPlanned = state.steps.size() - stepsBefore;
+				Set<String> failure = new LinkedHashSet<>(state.missing);
+				restore(state, stockBefore, stepsBefore, missingBefore);
+				if (bestFailure == null || stepsPlanned > bestSteps) {
+					bestFailure = failure;
+					bestSteps = stepsPlanned;
+				}
 			}
-			Nei.LOG.info("[MaEMI] tag input {}: {} option(s) {}", describe(input), options.size(), keys);
+			if (!entered) {
+				entered = true;
+				options = inputOptions(input, needed, state, planner.path);
+				if (options.isEmpty()) {
+					state.missing.add(describe(input));
+					return DONE_FAIL;
+				}
+				if (options.size() > 1 && state.debugLogs > 0 && planner.path.size() <= 4) {
+					state.debugLogs--;
+					List<String> keys = new ArrayList<>();
+					for (int i = 0; i < options.size() && i < 8; i++) {
+						keys.add(stockKey(options.get(i)));
+					}
+					Nei.LOG.info("[MaEMI] tag input {}: {} option(s) {}", describe(input), options.size(), keys);
+				}
+			}
+			while (true) {
+				if (index >= options.size() || tried >= MAX_OPTIONS_TRIED) {
+					if (bestFailure != null && !bestFailure.isEmpty() && bestSteps > 0) {
+						state.missing.addAll(bestFailure);
+					} else {
+						// Nothing got anywhere, so the blocker is the ingredient itself rather than
+						// one of its interchangeable alternatives. Naming the canonical stack keeps
+						// the message useful: "tin wire" rather than whichever variant came first.
+						state.missing.add(describe(input));
+					}
+					return DONE_FAIL;
+				}
+				EmiStack option = options.get(index++);
+				tried++;
+				stockBefore = new HashMap<>(state.stock);
+				stepsBefore = state.steps.size();
+				missingBefore = new LinkedHashSet<>(state.missing);
+				planner.push(new PlanFrame(option, needed, depth));
+				return YIELD;
+			}
 		}
-		Set<String> bestFailure = null;
-		int bestStepsPlanned = -1;
-		int tried = 0;
-		for (EmiStack option : options) {
-			if (tried++ >= MAX_OPTIONS_TRIED) {
-				break;
-			}
-			Map<String, Long> stockBefore = new HashMap<>(state.stock);
-			int stepsBefore = state.steps.size();
-			Set<String> missingBefore = new LinkedHashSet<>(state.missing);
-			if (plan(option, needed, depth, state, path, maxDepth)) {
-				return true;
-			}
-			int stepsPlanned = state.steps.size() - stepsBefore;
-			Set<String> failure = new LinkedHashSet<>(state.missing);
-			restore(state, stockBefore, stepsBefore, missingBefore);
-			if (bestFailure == null || stepsPlanned > bestStepsPlanned) {
-				bestFailure = failure;
-				bestStepsPlanned = stepsPlanned;
-			}
-		}
-		if (bestFailure != null && !bestFailure.isEmpty() && bestStepsPlanned > 0) {
-			state.missing.addAll(bestFailure);
-		} else {
-			// Nothing got anywhere, so the blocker is the ingredient itself rather than one of its
-			// interchangeable alternatives. Naming the canonical stack keeps the message useful:
-			// "tin wire" instead of whichever variant the sorter happened to put first.
-			state.missing.add(describe(input));
-		}
-		return false;
 	}
 
-	private static List<RecipeOption> recipesFor(EmiStack stack, long needed, State state, Set<String> path) {
-		if (state.seenStacks.size() < 512 && !stack.isEmpty()) {
-			state.seenStacks.add(stack);
-		}
-		List<RecipeOption> options = new ArrayList<>();
+	/**
+	 * Drops the candidate recipes that can never work for this stack in this screen: those that do
+	 * not produce it, those this screen cannot fill, and recycling recipes that eat the very item
+	 * they make. None of these depend on the stock, so the answer is cached per item.
+	 */
+	private static List<EmiRecipe> prefilter(EmiStack stack, State state) {
 		List<EmiRecipe> candidates = RecipeRegistry.recipesFor(stack);
-		// Why each candidate was dropped, so "no recipe is known" can be diagnosed from the log
-		// instead of guessed at from the outside.
+		if (candidates.size() > MAX_CANDIDATES) {
+			// Bounds one planning step without ever dropping a real recipe: the largest candidate list
+			// seen in a Monifactory log was 458.
+			candidates = candidates.subList(0, MAX_CANDIDATES);
+		}
+		List<EmiRecipe> passing = new ArrayList<>(candidates.size());
 		List<String> rejected = new ArrayList<>();
 		for (EmiRecipe recipe : candidates) {
 			if (recipe == null) {
 				continue;
 			}
-			long produced = producedAmount(recipe, stack);
-			if (produced <= 0) {
+			if (producedAmount(recipe, stack) <= 0) {
 				rejected.add(recipeKey(recipe) + " (does not produce this stack)");
 				continue;
 			}
@@ -381,14 +661,44 @@ public final class CraftPlanner {
 				rejected.add(recipeKey(recipe) + " (not craftable in this screen)");
 				continue;
 			}
-			// Recycling recipes take the item itself as input and give it back with zero net gain
+			// Recycling recipes take the item itself as input and give it back with zero net gain.
 			if (consumesTarget(recipe, stack)) {
 				rejected.add(recipeKey(recipe) + " (consumes the item it makes)");
 				continue;
 			}
+			passing.add(recipe);
+		}
+		state.rejectedCandidates.put(keyFor(stack), rejected);
+		return passing;
+	}
+
+	private static String keyFor(EmiStack stack) {
+		String key = stockKey(stack);
+		return key.isEmpty() ? describe(stack) : key;
+	}
+
+	private static List<RecipeOption> recipesFor(EmiStack stack, long needed, State state, Set<String> path) {
+		if (state.seenStacks.size() < 512 && !stack.isEmpty()) {
+			state.seenStacks.add(stack);
+		}
+		List<RecipeOption> options = new ArrayList<>();
+		// The same item is asked about many times in one plan (every parent that needs it). The
+		// candidate list and the static rejections do not depend on stock, so they are cached: the
+		// filter below is the expensive part and repeating it was pure waste.
+		List<EmiRecipe> candidates = state.filteredCandidates.get(keyFor(stack));
+		boolean cached = candidates != null;
+		if (!cached) {
+			candidates = prefilter(stack, state);
+			state.filteredCandidates.put(keyFor(stack), candidates);
+		}
+		// Only the checks that depend on the current stock and plan path are left, and those have to
+		// run every time; everything above is already settled by the cache.
+		for (EmiRecipe recipe : candidates) {
+			if (recipe == null) {
+				continue;
+			}
 			// Do not recursively plan uncrafting/splitting recipes if the input is not in stock
 			if (isReverseRecipe(recipe, stack, state, path)) {
-				rejected.add(recipeKey(recipe) + " (uncrafting/splitting recipe)");
 				continue;
 			}
 			options.add(estimate(recipe, stack, needed, state, path));
@@ -396,6 +706,7 @@ public final class CraftPlanner {
 		if (options.isEmpty() && !candidates.isEmpty() && state.debugLogs > 0 && path.size() <= 4) {
 			state.debugLogs--;
 			Nei.LOG.info("[MaEMI] no usable recipe for {} among {} candidate(s)", stockKey(stack), candidates.size());
+			List<String> rejected = state.rejectedCandidates.getOrDefault(keyFor(stack), List.of());
 			for (int i = 0; i < rejected.size() && i < 6; i++) {
 				Nei.LOG.info("[MaEMI]   {}", rejected.get(i));
 			}
@@ -602,7 +913,8 @@ public final class CraftPlanner {
 				continue;
 			}
 			options.add(candidate);
-			tiers.put(key, optionTier(candidate, needed, state, path));
+			tiers.put(key, options.size() <= MAX_OPTIONS_SCORED
+				? optionTier(candidate, needed, state, path) : 1);
 			materials.put(key, materialScore(candidate, state.hint));
 			stock.put(key, state.stock.getOrDefault(key, 0L));
 		}
@@ -1086,7 +1398,14 @@ public final class CraftPlanner {
 	 */
 	private static void explainMissing(List<String> missing, State state) {
 		Set<String> roots = new LinkedHashSet<>();
+		int examined = 0;
 		for (String entry : missing) {
+			// Diagnostics, not the answer: a handful is enough to name the blocker, and walking a
+			// hundred of them would put the cost back into a single tick.
+			if (examined++ >= 8) {
+				roots.add(entry);
+				continue;
+			}
 			EmiStack stack = stackFor(entry, state);
 			if (stack == null || stack.isEmpty()) {
 				roots.add(entry);
@@ -1378,10 +1697,6 @@ public final class CraftPlanner {
 		}
 	}
 
-	private static long deadline() {
-		return System.nanoTime() + PLAN_BUDGET_NANOS;
-	}
-
 	private static CraftPlan finishPlan(EmiStack target, int requested, State state) {
 		List<String> missing = new ArrayList<>(state.missing);
 		if (!state.timedOut) {
@@ -1390,10 +1705,6 @@ public final class CraftPlanner {
 		List<String> tools = state.unavailableTool.isEmpty() ? List.of() : List.of(state.unavailableTool);
 		return new CraftPlan(target, requested, orderSteps(state.steps), List.copyOf(missing), state.timedOut,
 			tools);
-	}
-
-	private static boolean outOfTime(State state) {
-		return System.nanoTime() - state.deadline > 0;
 	}
 
 	private static long multiply(long a, long b) {
@@ -1447,8 +1758,10 @@ public final class CraftPlanner {
 		private final Map<String, Boolean> craftable = new HashMap<>();
 		private final Map<String, Boolean> shallowCache = new HashMap<>();
 		private final Map<String, Boolean> reverseCache = new HashMap<>();
+		/** Candidate recipes per item, already filtered down to those that can work at all. */
+		private final Map<String, List<EmiRecipe>> filteredCandidates = new HashMap<>();
+		private final Map<String, List<String>> rejectedCandidates = new HashMap<>();
 		private final java.util.List<EmiStack> seenStacks = new ArrayList<>();
-		private final long deadline;
 		private String hint = "";
 		private String targetNamespace = "";
 		private int attempts;
@@ -1456,10 +1769,9 @@ public final class CraftPlanner {
 		private boolean timedOut;
 		private String unavailableTool = "";
 
-		private State(Map<String, Long> stock, Predicate<EmiRecipe> allowed, long deadline) {
+		private State(Map<String, Long> stock, Predicate<EmiRecipe> allowed) {
 			this.stock = stock;
 			this.allowed = allowed;
-			this.deadline = deadline;
 		}
 	}
 
