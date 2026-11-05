@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.19
+
+### Deep chains, and every inventory the screen offers
+
+- **The search budget was too small for real chains.** A GregTech machine is deeper than it
+  looks -- machine, casing, plate, ingot, with a tool at each level -- and every level multiplies
+  the alternatives. The attempt cap of 4096 was exhausted part-way down, and the plan then
+  reported the top item as missing. It is 200,000 now; planning is time-sliced, so a large
+  number costs ticks, not a freeze. The step cap went from 256 to 512 and the default depth from
+  12 to 24.
+- **When a limit does stop a plan, the log says which one** (`stopped at X: attempts=...
+  depth=.../... steps=.../...`), instead of pretending the item is missing.
+- **Every inventory the screen exposes is counted.** The player's slots, the screen's own slots,
+  the cursor, and whatever EMI's handler for that screen can see -- a terminal's network, a
+  backpack, a station's storage. The handler's view is merged by taking the larger count, not by
+  summing, because it normally includes the player's slots and summing would double them.
+
 ## 1.0.18
 
 ### A tool you are carrying is always found

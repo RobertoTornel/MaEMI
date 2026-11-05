@@ -34,10 +34,16 @@ import net.minecraft.util.Identifier;
  * at cycles, and it reports what is missing instead of producing a plan that cannot run.
  */
 public final class CraftPlanner {
-	private static final int MAX_STEPS = 256;
+	// A step is one craft. A deep machine (hull -> casing -> plate -> ingot, plus tools) is tens of
+	// steps, not hundreds; the cap only stops a runaway plan.
+	private static final int MAX_STEPS = 512;
 	// Backtracking tries recipe and ingredient alternatives; cap failed exploration so a large
 	// modpack recipe graph cannot stall the client thread.
-	private static final int MAX_ATTEMPTS = 4096;
+	// Backtracking tries recipe and ingredient alternatives. The cap exists so a pathological graph
+	// cannot spin forever; it is generous because a real chain is deep (machine -> casing -> plate
+	// -> ingot) and each level multiplies the alternatives. Planning is time-sliced now, so a large
+	// number here costs ticks, not a freeze.
+	private static final int MAX_ATTEMPTS = 200_000;
 	// Interchangeable tag alternatives are ordered best-first, so walking hundreds of them only
 	// multiplies the work: a GT cable tag lists 144 tools and one plan used to try every one.
 	private static final int MAX_OPTIONS_TRIED = 8;
@@ -469,6 +475,14 @@ public final class CraftPlanner {
 			}
 			if (++state.attempts > MAX_ATTEMPTS || depth >= planner.maxDepth
 					|| state.steps.size() >= MAX_STEPS) {
+				// Say which limit stopped it. "Missing" is a lie when the real cause is a depth cap,
+				// and a deep chain (a machine, its casing, the plate, the ingot) is exactly where a
+				// cap bites first.
+				if (state.debugLogs > 0) {
+					state.debugLogs--;
+					Nei.LOG.info("[MaEMI] stopped at {}: attempts={} depth={}/{} steps={}/{}",
+						describe(stack), state.attempts, depth, planner.maxDepth, state.steps.size(), MAX_STEPS);
+				}
 				state.missing.add(describe(stack));
 				return DONE_FAIL;
 			}
@@ -1381,6 +1395,10 @@ public final class CraftPlanner {
 		if (screen != null) {
 			addScreenSlots(screen, counts);
 			add(counts, screen.getScreenHandler().getCursorStack());
+			// Whatever EMI's handler for this screen can see is added on top, never instead: a
+			// terminal's network, a backpack, a station's own storage. Replacing the player's
+			// inventory with the handler's view is what once made 22 carried cables look missing.
+			addHandlerStock(screen, recipes, counts);
 		}
 		return counts;
 	}
@@ -1427,6 +1445,46 @@ public final class CraftPlanner {
 			return 0;
 		}
 		return key.equals(stockKey(EmiStack.of(stack))) ? stack.getCount() : 0;
+	}
+
+	/**
+	 * Adds everything the EMI recipe handler for this screen can draw from. This is how a storage
+	 * terminal's network, a backpack or a station's own storage becomes usable stock; the player's
+	 * inventory is already counted, so this can only add.
+	 */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static void addHandlerStock(HandledScreen<?> screen, List<EmiRecipe> recipes,
+			Map<String, Long> counts) {
+		if (recipes == null || recipes.isEmpty()) {
+			return;
+		}
+		try {
+			EmiRecipeHandler handler = EmiRecipeFiller.getFirstValidHandler(recipes.get(0), screen);
+			if (handler == null) {
+				return;
+			}
+			EmiPlayerInventory inventory = handler.getInventory(screen);
+			if (inventory == null || inventory.inventory == null) {
+				return;
+			}
+			for (EmiStack stack : inventory.inventory.values()) {
+				if (stack == null || stack.isEmpty() || stack.getAmount() <= 0) {
+					continue;
+				}
+				String key = stockKey(stack);
+				if (key.isEmpty()) {
+					continue;
+				}
+				// The handler's view normally includes the player's own slots, so summing would count
+				// them twice and make the planner think it has twice what it has. The larger of the two
+				// is the honest number: it adds a network or a backpack without inflating the rest.
+				counts.merge(key, stack.getAmount(), Math::max);
+			}
+		} catch (Throwable t) {
+			// A handler that cannot describe its inventory must not break planning; the player's own
+			// slots are already counted.
+			Nei.LOG.debug("[MaEMI] could not read the screen handler's inventory", t);
+		}
 	}
 
 	/** Every slot of the open screen that is not part of the player's inventory or a result slot. */

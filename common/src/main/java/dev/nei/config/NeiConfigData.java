@@ -63,8 +63,12 @@ public final class NeiConfigData {
 
 	public static final class Autocraft {
 		public boolean enabled = true;
-		/** How many levels of crafting recipes may be chained. */
-		public int maxDepth = 12;
+		/**
+		 * How many levels of crafting recipes may be chained. A GregTech machine is deeper than it
+		 * looks -- machine, casing, plate, ingot, and a tool at each level -- so the old default of 12
+		 * cut real chains off and reported the item as missing.
+		 */
+		public int maxDepth = 24;
 		/** Stop a single request after this many crafted items. */
 		public int maxCrafts = 512;
 		/** Use recipes that need a machine other than a crafting table. */
