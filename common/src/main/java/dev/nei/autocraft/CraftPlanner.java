@@ -759,9 +759,21 @@ public final class CraftPlanner {
 				Nei.LOG.info("[MaEMI]   {}", rejected.get(i));
 			}
 		}
+		// A recipe that worked for this item before is tried first. The search can land on a different
+		// recipe each time -- a machine, a crafting table, a chain of intermediates -- and the ordering
+		// below only approximates which is best. Remembering the one that actually worked makes
+		// repeated crafts fast and, more importantly, consistent.
+		final String remembered = CraftCache.recipeFor(keyFor(stack));
 		// Deterministic order: reachable recipes first, then fewest items not in stock,
 		// plain crafting table over machines, same-mod recipes, higher yield, and recipe identity.
 		options.sort((a, b) -> {
+			if (remembered != null) {
+				boolean aRemembered = remembered.equals(recipeKey(a.recipe()));
+				boolean bRemembered = remembered.equals(recipeKey(b.recipe()));
+				if (aRemembered != bRemembered) {
+					return aRemembered ? -1 : 1;
+				}
+			}
 			int byUnreachable = Integer.compare(a.unreachable(), b.unreachable());
 			if (byUnreachable != 0) {
 				return byUnreachable;
@@ -1814,6 +1826,19 @@ public final class CraftPlanner {
 	}
 
 	private static CraftPlan finishPlan(EmiStack target, int requested, State state) {
+		if (state.missing.isEmpty() && !state.steps.isEmpty()) {
+			// The plan worked, so the recipes in it are worth remembering: the next request for any of
+			// these items starts from the recipe that actually produced it.
+			for (CraftStep step : state.steps) {
+				String recipe = recipeKey(step.recipe());
+				for (EmiStack output : step.recipe().getOutputs()) {
+					if (output != null && !output.isEmpty()) {
+						CraftCache.remember(keyFor(output), recipe);
+					}
+				}
+			}
+			CraftCache.save();
+		}
 		if (state.debugLogs > 0 && !state.steps.isEmpty()) {
 			state.debugLogs--;
 			CraftStep first = state.steps.get(0);

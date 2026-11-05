@@ -21,6 +21,8 @@ public final class NeiClient {
 		platform = plt;
 		NeiConfig.load(plt.configDirectory());
 		Nei.LOG.info("[MaEMI] loaded config from {}", NeiConfig.file());
+		dev.nei.autocraft.CraftCache.load(plt.configDirectory());
+		Nei.LOG.info("[MaEMI] craft cache holds {} remembered recipe(s)", dev.nei.autocraft.CraftCache.size());
 	}
 
 	public static NeiPlatform platform() {

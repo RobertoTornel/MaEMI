@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.20
+
+### The mod remembers how it made something
+
+- **A recipe that worked is tried first next time.** Planning is a search, and a search can land
+  on a different recipe each time: the same plate may be reachable through a machine, through a
+  crafting table, or through a chain of intermediates, and the ordering heuristics only
+  approximate which is best. When a plan succeeds, the recipe that actually produced each item is
+  remembered and tried first on the next request, so repeated crafts are fast and consistent
+  instead of changing their mind.
+- The cache is a hint, never a rule: a remembered recipe is only used if it still produces the
+  item and can still be filled in the open screen. Anything else falls back to the normal search.
+- It is stored in `config/nei-craft-cache.json` and survives restarts.
+
 ## 1.0.19
 
 ### Deep chains, and every inventory the screen offers
