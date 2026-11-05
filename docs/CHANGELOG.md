@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.18
+
+### A tool you are carrying is always found
+
+- **The stock check is no longer capped.** Scoring alternatives was capped at 48 to keep a
+  planning step short, but the cap applied to the stock check too. A GregTech wire cutter tag
+  lists 144 options, so a wire cutter you were carrying could fall past the cap, score lowest,
+  and never be tried -- and the mod asked for a different material's wire cutter while you held
+  one. Whether you have an item is a map lookup, so it is now checked for every option; only the
+  expensive part (does it have a craftable recipe) stays capped.
+- **The message names the kind of tool, not a material variant.** "You need a wire cutter"
+  instead of "you need a gtceu:ev_invar_wire_cutter", which sent you looking for a specific one
+  when any would do.
+
 ## 1.0.17
 
 ### Better recipe choice, and the real blocker named

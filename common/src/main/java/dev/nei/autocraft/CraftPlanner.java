@@ -430,6 +430,7 @@ public final class CraftPlanner {
 						// wrought_iron_plate" when the plate needs a hammer you do not have sends the
 						// player looking for the wrong thing. Name the tool.
 						state.unavailableTool = describe(stack);
+						state.unavailableToolStack = stack;
 					}
 					dropPath(planner);
 					return DONE_FAIL;
@@ -956,8 +957,22 @@ public final class CraftPlanner {
 				continue;
 			}
 			options.add(candidate);
-			tiers.put(key, options.size() <= MAX_OPTIONS_SCORED
-				? optionTier(candidate, needed, state, path) : 1);
+			// Whether the player already has it is a map lookup, so it is checked for every option.
+			// Only the expensive part -- does it have a recipe, is that recipe craftable -- is capped,
+			// because that is a recipe lookup per alternative and a GregTech tag can list hundreds.
+			// Capping the whole score was a bug: a wire cutter tag lists 144 options, so a wire cutter
+			// the player was carrying could fall past the cap, score lowest, and never be tried -- the
+			// mod then asked for a different material's wire cutter.
+			long have = state.stock.getOrDefault(key, 0L);
+			if (have >= needFor(candidate, needed)) {
+				tiers.put(key, 5);
+			} else if (have > 0) {
+				tiers.put(key, 4);
+			} else if (options.size() <= MAX_OPTIONS_SCORED) {
+				tiers.put(key, optionTier(candidate, needed, state, path));
+			} else {
+				tiers.put(key, 1);
+			}
 			materials.put(key, materialScore(candidate, state.hint));
 			stock.put(key, state.stock.getOrDefault(key, 0L));
 		}
@@ -1751,7 +1766,8 @@ public final class CraftPlanner {
 		if (!state.timedOut) {
 			explainMissing(missing, state);
 		}
-		List<String> tools = state.unavailableTool.isEmpty() ? List.of() : List.of(state.unavailableTool);
+		List<String> tools = state.unavailableTool.isEmpty() ? List.of()
+			: List.of(ToolIdentity.kindOf(state.unavailableToolStack));
 		return new CraftPlan(target, requested, orderSteps(state.steps), List.copyOf(missing), state.timedOut,
 			tools);
 	}
@@ -1817,6 +1833,7 @@ public final class CraftPlanner {
 		private int debugLogs = DEBUG_LOG_LIMIT;
 		private boolean timedOut;
 		private String unavailableTool = "";
+		private EmiStack unavailableToolStack = EmiStack.EMPTY;
 
 		private State(Map<String, Long> stock, Predicate<EmiRecipe> allowed) {
 			this.stock = stock;

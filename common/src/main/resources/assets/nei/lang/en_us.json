@@ -68,7 +68,7 @@
 	"nei.autocraft.wrong_screen": "No recipe for that item can be made in this screen. Open the crafting station it needs.",
 	"nei.autocraft.no_recipe": "EMI: no recipe is known for that item.",
 	"nei.autocraft.missing": "EMI: cannot craft this yet, missing: %s",
-  "nei.autocraft.need_tool": "EMI: you need a %s in your inventory. MaEMI does not craft tools.",
+  "nei.autocraft.need_tool": "EMI: you need a %s, and it cannot be made from what you have.",
   "nei.autocraft.timeout": "EMI: the recipe tree was too large to plan. Craft the parts first, then try again.",
 	"nei.autocraft.depth_limit": "Recipe tree too deep",
 	"nei.autocraft.budget": "Craft limit reached",

@@ -82,6 +82,28 @@ public final class ToolIdentity {
 		return path;
 	}
 
+	/**
+	 * The kind of tool, without its material: {@code wire cutter} for {@code ev_invar_wire_cutter}.
+	 * A player does not need "an EV invar wire cutter", they need a wire cutter; naming the
+	 * material sends them looking for a specific one when any would do.
+	 */
+	public static String kindOf(EmiStack stack) {
+		if (stack == null || stack.isEmpty()) {
+			return "tool";
+		}
+		Identifier id = stack.getId();
+		if (id == null) {
+			return "tool";
+		}
+		String path = id.getPath();
+		for (String suffix : TOOL_SUFFIXES) {
+			if (path.endsWith(suffix)) {
+				return suffix.substring(1).replace('_', ' ');
+			}
+		}
+		return path.replace('_', ' ');
+	}
+
 	private static boolean hasToolNbt(EmiStack stack) {
 		NbtCompound nbt = stack.getNbt();
 		return nbt != null && nbt.contains("GT.Tool");
