@@ -88,7 +88,7 @@ public final class CraftPlanner {
 		private final int cap;
 		private final Predicate<EmiRecipe> allowed;
 		private final Map<String, Long> stock;
-		private final long startedAt = System.nanoTime();
+		private long startedAt = System.nanoTime();
 
 		private Planner planner;
 		private int amount;
@@ -100,6 +100,10 @@ public final class CraftPlanner {
 		private CraftPlan result;
 		private boolean done;
 		private boolean gaveUp;
+		/** Set once the full request has been retried as a single craft after running out of time. */
+		private boolean retriedSmaller;
+		/** Overrides the requested amount for the retry, without losing what was asked for. */
+		private int requestedOverride;
 
 		private Job(EmiStack target, int amount, int cap, Predicate<EmiRecipe> allowed,
 				Map<String, Long> stock) {
@@ -127,15 +131,34 @@ public final class CraftPlanner {
 			long deadline = System.nanoTime() + Math.max(200_000L, budgetNanos);
 			while (!done) {
 				if (System.nanoTime() - startedAt > TOTAL_BUDGET_NANOS) {
-					// Give up honestly: keep whatever the current attempt has and say the tree was
-					// too large, instead of holding the caller while the graph explodes.
+					// Out of time. The plan in hand is incomplete, so it must not be handed back as if it
+					// were an answer: an empty step list with an empty missing list reads as "you already
+					// have enough" and the craft silently does nothing, which is exactly what happened.
+					// Retry once with a single craft, which is a far smaller search, and only then admit
+					// defeat.
+					if (best != null) {
+						// The craft-all search already found an amount that works; that is a real
+						// answer, so hand it back instead of throwing the work away.
+						result = best;
+						done = true;
+						break;
+					}
+					if (!retriedSmaller && amount > 1) {
+						retriedSmaller = true;
+						planner = null;
+						phase = 0;
+						requestedOverride = 1;
+						startedAt = System.nanoTime();
+						continue;
+					}
 					gaveUp = true;
 					State state = planner == null ? null : planner.state;
 					if (state != null) {
 						state.timedOut = true;
 					}
-					result = planner == null ? result : finishPlan(target, amount, planner.state);
-					if (result == null) {
+					result = planner == null ? null : finishPlan(target, amount, planner.state);
+					if (result == null || (result.steps().isEmpty() && result.missing().isEmpty())) {
+						// Never return "nothing to do" for a request that was never answered.
 						result = new CraftPlan(target, Math.max(1, amount), List.of(), List.of(), true,
 							List.of());
 					}
@@ -179,7 +202,10 @@ public final class CraftPlanner {
 		private boolean startNext() {
 			switch (phase) {
 				case 0:
-					startPlan(requested > 0 ? requested : cap);
+					// "Craft all" starts at one, not at the cap. The cap-sized plan is the most expensive
+					// search there is, and it was the first thing tried -- which is how a request for a
+					// handful of items ran out of planning time and then did nothing at all.
+					startPlan(requestedOverride > 0 ? requestedOverride : (requested > 0 ? requested : 1));
 					return true;
 				case 1:
 					if (low <= high && probes < MAX_ALL_PROBES) {
@@ -212,7 +238,7 @@ public final class CraftPlanner {
 		}
 
 		private void accept(CraftPlan plan) {
-			if (requested > 0) {
+			if (requested > 0 || requestedOverride > 0) {
 				result = plan;
 				done = true;
 				return;
@@ -220,14 +246,16 @@ public final class CraftPlanner {
 			switch (phase) {
 				case 0 -> {
 					if (plan.missing().isEmpty()) {
+						// One is possible; search upwards for the largest amount that still is.
+						best = plan;
+						phase = 1;
+						low = 2;
+						high = cap;
+						probes = 0;
+					} else {
+						// Not even one can be made; that answer is the honest one.
 						result = plan;
 						done = true;
-					} else {
-						phase = 1;
-						low = 1;
-						high = cap - 1;
-						probes = 0;
-						best = null;
 					}
 				}
 				case 1 -> {
@@ -436,13 +464,10 @@ public final class CraftPlanner {
 				state.missing.add(describe(stack));
 				return DONE_FAIL;
 			}
-			if (reusable) {
-				// A tool is a tool, not a product. When a recipe needs a file and there is none, the
-				// honest answer is "you have no file", not a plan that manufactures four of them.
-				state.unavailableTool = describe(stack);
-				state.missing.add(describe(stack));
-				return DONE_FAIL;
-			}
+			// A missing tool is crafted like anything else -- a plan that needs a file and has none
+			// must make one. What it must not do is make one per dependent craft, and that is handled
+			// by the reusable clamp above (one copy satisfies any number of recipes) and by the
+			// batch merge, which never asks for a second copy of a tool.
 			planner.path.add(key);
 			pathAdded = true;
 			options = recipesFor(stack, needed, state, planner.path);

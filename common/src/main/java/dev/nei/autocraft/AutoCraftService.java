@@ -144,16 +144,17 @@ public final class AutoCraftService {
 		for (CraftStep planned : candidate.steps()) {
 			Nei.LOG.info("[MaEMI] plan step {} x{}", planned.recipe().getId(), planned.batches());
 		}
+		if (candidate.timedOut()) {
+			// Checked before anything else. A plan that ran out of time has no answer, and an empty
+			// step list with an empty missing list used to fall through to "already satisfied" and
+			// do nothing at all -- the craft was skipped with no explanation.
+			message(Text.translatable("nei.autocraft.timeout"));
+			return;
+		}
 		if (!candidate.missing().isEmpty()) {
 			// Log what the player actually carries for each missing item: when a stock key does not
 			// line up, the count is the only clue that the item was there all along.
 			CraftPlanner.describeMissing(candidate.missing());
-			if (candidate.timedOut()) {
-				// Exploring the recipe graph hit the time budget; that says nothing about whether the
-				// item can be made, so do not pretend it is missing.
-				message(Text.translatable("nei.autocraft.timeout"));
-				return;
-			}
 			// The planner reports the target itself when it has candidate recipes but none can
 			// actually be used here; that is not a missing ingredient, so say what it really is.
 			String targetId = target.getId() == null ? "" : target.getId().toString();

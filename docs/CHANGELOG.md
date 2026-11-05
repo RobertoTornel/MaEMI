@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.16
+
+### Tools are crafted again, and a slow plan no longer does nothing
+
+- **A missing tool is crafted.** 1.0.11 refused to plan a file or hammer at all and told you to
+  go and get one, which was the wrong answer: a plan that needs a file and has none should make
+  one. It does again, and still only one -- a tool is required once, not once per dependent
+  craft, so the "it keeps crafting files" pile cannot come back.
+- **Running out of planning time no longer skips the craft.** A timed-out plan came back with no
+  steps and no missing items, which read as "you already have enough" and did nothing at all,
+  silently. A timeout is now reported as a timeout, and before giving up the request is retried
+  as a single craft, which is a far smaller search.
+- **"Craft all" starts from one craft, not from the cap.** The cap-sized plan is the most
+  expensive search there is and it was the first thing tried, so a request for a handful of
+  items could exhaust the budget before producing anything. It now proves one is possible, then
+  searches upwards, and keeps the best amount it found if it runs out of time.
+
 ## 1.0.15
 
 ### Planning can no longer freeze the game
